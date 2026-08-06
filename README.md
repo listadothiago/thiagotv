@@ -79,6 +79,18 @@ playlist. Anything that never starts (deleted, private, embedding-disabled,
 region-blocked) is dropped from every channel for that session. This has to
 happen at playback time because a video that works today can break next month.
 
+## Hosting
+
+Deployed on Vercel from the `main` branch of this repo. There is no build step
+on Vercel's side — the files in the repo are the website.
+
+`vercel.json` sets `playlist.json` and the generated HTML to revalidate rather
+than sit in a CDN cache. Both change on every publish, and a cached copy would
+mean newly added programmes not appearing for visitors until it expired. Note
+that `vercel.json` is validated against Vercel's schema, which rejects any
+property it doesn't recognise — including comments, which JSON has no syntax
+for anyway.
+
 ## Publishing
 
 The site is `index.html` and `playlist.json`. Push to the `main` branch and
