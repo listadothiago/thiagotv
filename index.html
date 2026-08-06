@@ -15,11 +15,16 @@
             padding: 20px;
         }
 
+        /* With nothing below the set, the page is shorter than the window on most
+           screens. Centring keeps the television the object in the room rather than
+           something pinned to the top of a mostly empty page. */
         .stage {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 26px;
+            justify-content: center;
+            min-height: calc(100vh - 40px);
+            gap: 22px;
             max-width: 900px;
             margin: 0 auto;
         }
@@ -230,116 +235,6 @@
             white-space: nowrap;
         }
 
-        /* ---- Dossier ----------------------------------------------------------
-           Programme notes for whatever is on screen, presented as a duplicated
-           sheet from a station archive: aged stock, serif body, typewriter
-           headings. It sits under the set rather than beside it so the TV stays
-           the object and this stays paperwork about it. */
-        .dossier {
-            width: 100%;
-            background:
-                linear-gradient(180deg, rgba(120, 90, 50, .10), transparent 220px),
-                #efe4cd;
-            color: #2b2115;
-            border-radius: 2px;
-            padding: 40px 46px 34px;
-            box-shadow:
-                0 1px 0 rgba(255, 255, 255, .5) inset,
-                0 18px 44px rgba(0, 0, 0, .55);
-            /* A sheet of paper has edges that were cut, not rendered. */
-            border-top: 1px solid #f7efdd;
-            border-bottom: 1px solid #c5b391;
-            position: relative;
-        }
-        /* Punch holes, so it reads as something filed away. */
-        .dossier::before {
-            content: '';
-            position: absolute;
-            left: 16px; top: 0; bottom: 0;
-            width: 12px;
-            background-image: radial-gradient(circle at 50% 50%, rgba(0,0,0,.22) 0 5px, transparent 5px);
-            background-size: 12px 96px;
-            background-repeat: repeat-y;
-            opacity: .5;
-        }
-
-        .dossier-head {
-            border-bottom: 2px solid #2b2115;
-            padding-bottom: 14px;
-            margin-bottom: 20px;
-        }
-        .dossier-eyebrow {
-            font-size: 11px;
-            letter-spacing: 4px;
-            text-transform: uppercase;
-            color: #7a6444;
-            margin-bottom: 8px;
-        }
-        .dossier-title {
-            font-family: Georgia, 'Times New Roman', serif;
-            font-size: 27px;
-            line-height: 1.25;
-            font-weight: 700;
-            letter-spacing: -.01em;
-        }
-        .dossier-meta {
-            margin-top: 8px;
-            font-size: 11px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: #7a6444;
-        }
-
-        .dossier-body h2 {
-            font-size: 11px;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            color: #8a2f1d;
-            margin: 22px 0 7px;
-        }
-        .dossier-body h2:first-child { margin-top: 0; }
-        .dossier-body p {
-            font-family: Georgia, 'Times New Roman', serif;
-            font-size: 15.5px;
-            line-height: 1.72;
-            margin-bottom: 10px;
-        }
-        .dossier-body p:last-child { margin-bottom: 0; }
-
-        /* Controversies get a marked-up margin, the way a file note would. */
-        .dossier-body .flagged {
-            border-left: 3px solid #8a2f1d;
-            padding-left: 14px;
-        }
-
-        .dossier-foot {
-            margin-top: 26px;
-            padding-top: 12px;
-            border-top: 1px solid #c5b391;
-            font-size: 10.5px;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            color: #8a7a5c;
-            display: flex;
-            justify-content: space-between;
-            gap: 14px;
-            flex-wrap: wrap;
-        }
-
-        .dossier-empty {
-            font-family: Georgia, 'Times New Roman', serif;
-            font-style: italic;
-            color: #7a6444;
-            font-size: 15px;
-        }
-
-        @media (max-width: 768px) {
-            .dossier { padding: 26px 22px 22px; }
-            .dossier::before { display: none; }
-            .dossier-title { font-size: 20px; }
-            .dossier-body p { font-size: 14px; line-height: 1.6; }
-        }
-
         /* ---- Bulletin ---------------------------------------------------------
            The text channel. Styled after a station caption slide rather than a
            web page: fixed frame, generous margins, and phosphor colours, so it
@@ -532,15 +427,6 @@
         </div>
     </div>
 
-    <article class="dossier" id="dossier">
-        <header class="dossier-head">
-            <p class="dossier-eyebrow" id="dossierEyebrow">Programme notes</p>
-            <h1 class="dossier-title" id="dossierTitle"></h1>
-            <p class="dossier-meta" id="dossierMeta"></p>
-        </header>
-        <div class="dossier-body" id="dossierBody"></div>
-        <footer class="dossier-foot" id="dossierFoot"></footer>
-    </article>
 
     <!-- A real anchor, not a scripted one: this is how a crawler finds its way
          from the front page into the generated programme pages. -->
@@ -895,11 +781,6 @@
             psa: document.getElementById('psaScreen'),
             psaBody: document.getElementById('psaBody'),
             psaStamp: document.getElementById('psaStamp'),
-            dossierEyebrow: document.getElementById('dossierEyebrow'),
-            dossierTitle: document.getElementById('dossierTitle'),
-            dossierMeta: document.getElementById('dossierMeta'),
-            dossierBody: document.getElementById('dossierBody'),
-            dossierFoot: document.getElementById('dossierFoot'),
             forget: document.getElementById('forgetLink'),
             channelValue: document.getElementById('channelValue'),
             channelKnob: document.getElementById('channelKnob'),
@@ -1092,96 +973,6 @@
             if (snowTimer) { clearInterval(snowTimer); snowTimer = null; }
         }
 
-        // ---- Dossier -------------------------------------------------------------
-        // Notes about whatever is on screen. The copy is authored ahead of time and
-        // stored per video in playlist.json -- nothing is generated at runtime, which
-        // is what keeps this a static site with no key to leak and no request to pay
-        // for. A video with no notes says so plainly rather than showing a blank slab.
-        var DOSSIER_SECTIONS = [
-            { key: 'summary',     heading: 'Summary' },
-            { key: 'relevance',   heading: 'Why it matters' },
-            { key: 'controversy', heading: 'Controversy', flagged: true }
-        ];
-
-        function paragraphs(text, flagged) {
-            return String(text).split(/\n{2,}/).map(function (chunk) {
-                var p = document.createElement('p');
-                if (flagged) p.className = 'flagged';
-                p.textContent = chunk.trim();
-                return p;
-            });
-        }
-
-        function renderDossier(video) {
-            var body = el.dossierBody;
-            body.textContent = '';
-
-            if (!video) {
-                el.dossierEyebrow.textContent = 'Programme notes';
-                el.dossierTitle.textContent = 'ThiagoTV';
-                el.dossierMeta.textContent = '';
-                var idle = document.createElement('p');
-                idle.className = 'dossier-empty';
-                idle.textContent = 'Nothing on screen. Turn the dial.';
-                body.appendChild(idle);
-                el.dossierFoot.textContent = '';
-                return;
-            }
-
-            el.dossierEyebrow.textContent = 'Programme notes';
-            el.dossierTitle.textContent = video.title || video.videoId;
-
-            var meta = [];
-            if (Array.isArray(video.tags) && video.tags.length) meta.push(video.tags.join(' · '));
-            if (video.addedAt) meta.push('Aired ' + video.addedAt);
-            el.dossierMeta.textContent = meta.join('  //  ');
-
-            var doc = video.dossier || {};
-            var wrote = false;
-            DOSSIER_SECTIONS.forEach(function (section) {
-                var text = doc[section.key];
-                if (!text) return;
-                var h = document.createElement('h2');
-                h.textContent = section.heading;
-                body.appendChild(h);
-                paragraphs(text, section.flagged).forEach(function (p) { body.appendChild(p); });
-                wrote = true;
-            });
-
-            if (!wrote) {
-                var empty = document.createElement('p');
-                empty.className = 'dossier-empty';
-                empty.textContent = 'No notes on file for this one yet.';
-                body.appendChild(empty);
-            }
-
-            el.dossierFoot.textContent = '';
-            var left = document.createElement('span');
-            left.textContent = 'ThiagoTV archive';
-            var right = document.createElement('span');
-            right.textContent = 'youtube.com/watch?v=' + video.videoId;
-            el.dossierFoot.appendChild(left);
-            el.dossierFoot.appendChild(right);
-        }
-
-        function renderBulletinDossier() {
-            var body = el.dossierBody;
-            body.textContent = '';
-            el.dossierEyebrow.textContent = 'Station notice';
-            el.dossierTitle.textContent = 'Bulletin';
-            el.dossierMeta.textContent = '';
-            var live = activePsa();
-            var p = document.createElement('p');
-            if (live) {
-                p.textContent = live.text;
-            } else {
-                p.className = 'dossier-empty';
-                p.textContent = 'No notice posted at this time.';
-            }
-            body.appendChild(p);
-            el.dossierFoot.textContent = '';
-        }
-
         // ---- Bulletin ------------------------------------------------------------
         // Expiry is decided here, in the viewer's browser, rather than by anything
         // deleting the record. That's what lets a bulletin age out on a static site
@@ -1208,7 +999,6 @@
             hideCard();
             if (player && playerReady) player.stopVideo();
 
-            renderBulletinDossier();
 
             var live = activePsa();
             if (!live) {
@@ -1239,7 +1029,6 @@
             disarmWatchdog();
             expectingPlayback = false;
             hidePsa();
-            renderDossier(null);
             if (player && playerReady) player.stopVideo();
 
             // "You've watched it all" and "there's nothing here" look identical on a
@@ -1267,7 +1056,6 @@
             disarmWatchdog();
             expectingPlayback = false;
             hidePsa();
-            renderDossier(null);
             if (player && playerReady) player.stopVideo();
 
             var caught = current && current.caughtUp;
@@ -1312,7 +1100,6 @@
 
             hideCard();
             hidePsa();
-            renderDossier(video);
 
             if (startAt) {
                 // Spending a resume happens on the attempt, not on finishing: the

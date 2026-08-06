@@ -80,11 +80,13 @@ Two flags are worth setting deliberately when adding a channel:
 **Adding several at once** is fine — loop the `add` command. Report them as a
 short list at the end rather than narrating each one.
 
-## Programme notes (the dossier)
+## Programme notes
 
-Under the set is an archival-looking sheet with notes about whatever is playing.
-The copy is authored ahead of time and stored per video — nothing is generated in
-the browser.
+Each video can carry notes: what it is, why it matters, and any documented
+controversy. They don't appear on the front page — the television is the whole
+of the front page — but they are published as `v/<id>.html`, one page per video,
+linked from the programme guide. Those pages are what search engines and LLM
+crawlers actually read, so the notes are the site's entire text presence.
 
 ```
 python3 scripts/tv.py doc <url-or-id> --summary "..." --relevance "..." --controversy "..."

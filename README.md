@@ -33,6 +33,18 @@ python3 scripts/tv.py date <url-or-id> <YYYY-MM-DD>
 Titles are fetched from YouTube automatically. Any link shape works — watch,
 youtu.be, shorts, embed — or a bare video id.
 
+## Programme notes
+
+Notes about each video live in `playlist.json` under `dossier` and are published
+as the generated pages described below, not on the front page — the television
+is the whole of the front page.
+
+```bash
+python3 scripts/tv.py doc <url-or-id> --summary "..." --relevance "..." --controversy "..."
+python3 scripts/tv.py doc <url-or-id>            # print what's on file
+python3 scripts/tv.py doc <url-or-id> --clear
+```
+
 ## The Bulletin channel
 
 One channel carries text instead of video — a short announcement that expires on
