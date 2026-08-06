@@ -559,11 +559,19 @@
         'use strict';
 
         // ---- Channel definitions -------------------------------------------------
-        // A channel is just a filter + an ordering. "latest" is the front page: newest
-        // first, so whatever you posted most recently is what a visitor sees. Every
-        // other channel shuffles, which keeps repeat visits from feeling identical.
+        // A channel is a filter plus an ordering, and one more thing: whether it will
+        // show a viewer something they've already seen.
+        //
+        // `repeat: false` makes a channel strictly about what's new to *you*. When
+        // you've seen everything it carries, it has nothing to say and goes to static
+        // rather than pretending. Latest is that channel -- its whole promise is
+        // newness, and quietly re-running old videos would break it.
+        //
+        // Every other channel repeats once you're through the unseen ones, because
+        // their promise is a genre, not a novelty, and a music channel that refuses
+        // to play anything twice is just a channel that switches itself off.
         var CHANNELS = [
-            { id: 'latest',   label: 'Latest',   tag: null,        order: 'newest' },
+            { id: 'latest',   label: 'Latest',   tag: null,        order: 'newest', repeat: false },
             // The one channel that carries no video: a text bulletin that expires
             // on its own. See renderPsa().
             { id: 'psa',      label: 'Bulletin', kind: 'text' },
@@ -621,11 +629,27 @@
             Object.keys(seen).forEach(function (id) { seenAtLoad[id] = seen[id]; });
         }
 
+        // Merge rather than overwrite. Two tabs of the set share one localStorage but
+        // not one copy of `seen`, so a plain write means whichever tab saves last
+        // erases whatever the other one watched. Reading first and keeping the later
+        // timestamp for each video makes concurrent tabs additive instead.
         function saveSeen() {
             var store = storage();
             if (!store) return;
             try {
-                store.setItem(SEEN_KEY, JSON.stringify(seen));
+                var merged = {};
+                try {
+                    var existing = JSON.parse(store.getItem(SEEN_KEY) || '{}');
+                    Object.keys(existing).forEach(function (id) {
+                        if (typeof existing[id] === 'number') merged[id] = existing[id];
+                    });
+                } catch (e) { /* unreadable: this write replaces it */ }
+
+                Object.keys(seen).forEach(function (id) {
+                    if (!merged[id] || seen[id] > merged[id]) merged[id] = seen[id];
+                });
+
+                store.setItem(SEEN_KEY, JSON.stringify(merged));
             } catch (e) {
                 // Quota, most likely. Not worth interrupting playback over.
                 console.warn('ThiagoTV: could not save viewing memory', e);
@@ -780,11 +804,8 @@
             });
 
             // Split on what this viewer has already watched, order each half by the
-            // channel's own rule, then put the unseen half first. A returning
-            // visitor gets something new; once they're through it the channel keeps
-            // going with repeats rather than dead-ending, which is what a real
-            // station does. Note that Latest stays newest-first *within* each half,
-            // so the freshest unseen video still leads.
+            // channel's own rule, then put the unseen half first, so the freshest
+            // thing you haven't seen always leads.
             var fresh = [];
             var repeats = [];
             items.forEach(function (v) {
@@ -802,11 +823,18 @@
                 shuffle(repeats);
             }
 
+            var allowRepeats = ch.repeat !== false;
+
             channels[ch.id] = {
-                queue: fresh.concat(repeats),
+                queue: allowRepeats ? fresh.concat(repeats) : fresh,
                 index: 0,
                 seen: 0,
-                offAir: false
+                offAir: false,
+                allowRepeats: allowRepeats,
+                // Distinguishes "this channel carries nothing" from "you've watched
+                // everything it carries" -- the viewer deserves a different sentence
+                // for each.
+                caughtUp: !allowRepeats && fresh.length === 0 && repeats.length > 0
             };
             return channels[ch.id];
         }
@@ -816,14 +844,18 @@
         // from looping the same fixed order forever.
         function signBackOn(ch, state) {
             // Rebuild rather than just reshuffle: anything watched during this
-            // session should now sort to the back like any other repeat.
+            // session should now sort to the back like any other repeat, and a
+            // non-repeating channel needs to re-check whether anything is still
+            // unseen before it claims to have programming.
             delete channels[ch.id];
             var rebuilt = stateFor(ch);
             state.queue = rebuilt.queue;
+            state.allowRepeats = rebuilt.allowRepeats;
+            state.caughtUp = rebuilt.caughtUp;
             channels[ch.id] = state;
             state.index = 0;
             state.seen = 0;
-            state.offAir = false;
+            state.offAir = rebuilt.caughtUp;
         }
 
         // ---- The screen card -----------------------------------------------------
@@ -847,9 +879,24 @@
             'Normal service will resume shortly'
         ];
 
+        // Running out of *new* things is not a fault and shouldn't borrow the
+        // language of one. It's the station telling you you're up to date.
+        var CAUGHT_UP = [
+            'You have seen everything new',
+            'Nothing new since your last visit',
+            'You are up to date'
+        ];
+
         function pick(list) {
             return list[Math.floor(Math.random() * list.length)];
         }
+
+        // How often turning the dial puts on a show about it, and for how long.
+        // Roughly one tune in six: often enough to be a character trait, rare
+        // enough that it never feels like an obstacle between you and the video.
+        var INTERSTITIAL_CHANCE = 0.17;
+        var INTERSTITIAL_MS = 1500;
+        var hasTuned = false;
 
         function showCard(opts) {
             stopSnow();
@@ -1047,6 +1094,20 @@
             hidePsa();
             renderDossier(null);
             if (player && playerReady) player.stopVideo();
+
+            // "You've watched it all" and "there's nothing here" look identical on a
+            // dead screen, but they mean opposite things to the viewer -- one is an
+            // achievement, the other is an empty channel.
+            if (current && current.caughtUp) {
+                el.info.textContent = CHANNELS[channelIndex].label + ' — all caught up';
+                showCard({
+                    mode: Math.random() < 0.5 ? 'bars' : 'testcard',
+                    title: pick(CAUGHT_UP),
+                    sub: 'Try another channel · new programmes appear here'
+                });
+                return;
+            }
+
             el.info.textContent = CHANNELS[channelIndex].label + ' — no programming';
             showCard({
                 title: pick(TROUBLE),
@@ -1061,11 +1122,15 @@
             hidePsa();
             renderDossier(null);
             if (player && playerReady) player.stopVideo();
-            el.info.textContent = CHANNELS[channelIndex].label + ' — off air';
+
+            var caught = current && current.caughtUp;
+            el.info.textContent = CHANNELS[channelIndex].label +
+                (caught ? ' — all caught up' : ' — off air');
             showCard({
                 mode: Math.random() < 0.5 ? 'bars' : 'testcard',
-                title: pick(SIGN_OFF),
-                sub: 'Turn the dial to keep watching'
+                title: pick(caught ? CAUGHT_UP : SIGN_OFF),
+                sub: caught ? 'Try another channel · new programmes appear here'
+                            : 'Turn the dial to keep watching'
             });
         }
 
@@ -1103,8 +1168,19 @@
         function advanceCursor() {
             if (!current || !current.queue.length) return;
             current.seen++;
+
+            // A repeating channel never runs out -- it comes back round, with the
+            // already-watched videos sorted to the back where they belong.
+            if (current.allowRepeats) {
+                current.index = (current.index + 1) % current.queue.length;
+                return;
+            }
+
+            // A non-repeating channel carries only what's new to this viewer, so
+            // reaching the end of it means there is genuinely nothing left to show.
             if (current.seen >= current.queue.length) {
                 current.offAir = true;
+                current.caughtUp = true;
                 return;
             }
             current.index = (current.index + 1) % current.queue.length;
@@ -1166,6 +1242,27 @@
             );
 
             // A beat of snow between channels: the gap is what sells the dial.
+            //
+            // Now and then the set makes more of a meal of it -- a burst of colour
+            // bars or a "do not adjust your set" card before the picture arrives.
+            // Nothing is wrong when this happens; old televisions were just like
+            // that, and the cards are too good to save for failures. It stays rare,
+            // stays brief, and never greets a first-time visitor, because an opening
+            // screen of technical difficulties reads as a broken site rather than a
+            // joke.
+            var theatrical = hasTuned && Math.random() < INTERSTITIAL_CHANCE;
+            hasTuned = true;
+
+            if (theatrical) {
+                showCard({
+                    mode: Math.random() < 0.5 ? 'bars' : 'testcard',
+                    title: pick(TROUBLE),
+                    sub: 'Tuning to ' + ch.label
+                });
+                setTimeout(playCurrent, INTERSTITIAL_MS);
+                return;
+            }
+
             showCard({ mode: 'snow', title: 'Tuning', sub: ch.label, holding: false });
             setTimeout(playCurrent, 400);
         }
