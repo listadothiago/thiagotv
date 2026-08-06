@@ -214,6 +214,22 @@
         }
         .stage-nav a:hover { color: #c9a961; border-bottom-color: #c9a961; }
 
+        .stage-note {
+            margin-top: 14px;
+            color: #6f8fb5;
+            font-size: 10.5px;
+            letter-spacing: 1px;
+            line-height: 1.8;
+            max-width: 560px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .stage-note a {
+            font-size: 10.5px;
+            letter-spacing: 1px;
+            white-space: nowrap;
+        }
+
         /* ---- Dossier ----------------------------------------------------------
            Programme notes for whatever is on screen, presented as a duplicated
            sheet from a station archive: aged stock, serif body, typewriter
@@ -530,6 +546,11 @@
          from the front page into the generated programme pages. -->
     <nav class="stage-nav">
       <a href="guide.html">Programme guide — every broadcast, with notes</a>
+      <p class="stage-note">
+        This set remembers what you've watched so it can show you something new.
+        That memory stays in your browser and is never sent anywhere.
+        <a href="#" id="forgetLink">Reset viewing history</a>
+      </p>
     </nav>
   </div>
 
@@ -556,6 +577,92 @@
 
         var library = [];        // everything from playlist.json
         var psa = null;          // the current bulletin, if any
+
+        // ---- Viewing memory ------------------------------------------------------
+        // What this viewer has already watched, kept in their own browser and sent
+        // nowhere. It exists so a returning visitor gets shown something new rather
+        // than the same video that greeted them last time.
+        //
+        // Entries expire: a station that never repeats anything is a station that
+        // eventually has nothing to show, and after a few months a video is worth
+        // seeing again anyway.
+        var SEEN_KEY = 'thiagotv.seen.v1';
+        var SEEN_TTL_DAYS = 90;
+
+        var seen = Object.create(null);   // videoId -> epoch ms, last watched
+        var seenAtLoad = Object.create(null); // snapshot, so "repeat" stays stable
+
+        function storage() {
+            // Private browsing and blocked-storage settings both throw here rather
+            // than returning null, and a TV that won't switch on because it can't
+            // take notes is a bad trade. Losing the memory is the acceptable failure.
+            try {
+                var probe = '__tv__';
+                window.localStorage.setItem(probe, probe);
+                window.localStorage.removeItem(probe);
+                return window.localStorage;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function loadSeen() {
+            var store = storage();
+            if (!store) return;
+            try {
+                var raw = JSON.parse(store.getItem(SEEN_KEY) || '{}');
+                var cutoff = Date.now() - SEEN_TTL_DAYS * 86400000;
+                Object.keys(raw).forEach(function (id) {
+                    if (typeof raw[id] === 'number' && raw[id] > cutoff) seen[id] = raw[id];
+                });
+            } catch (e) {
+                console.warn('ThiagoTV: could not read viewing memory', e);
+            }
+            Object.keys(seen).forEach(function (id) { seenAtLoad[id] = seen[id]; });
+        }
+
+        function saveSeen() {
+            var store = storage();
+            if (!store) return;
+            try {
+                store.setItem(SEEN_KEY, JSON.stringify(seen));
+            } catch (e) {
+                // Quota, most likely. Not worth interrupting playback over.
+                console.warn('ThiagoTV: could not save viewing memory', e);
+            }
+        }
+
+        function markSeen(videoId) {
+            if (!videoId) return;
+            seen[videoId] = Date.now();
+            saveSeen();
+        }
+
+        // Two different questions, deliberately answered by two different records.
+        //
+        // wasSeen drives ordering and must be live: a video watched a minute ago
+        // should sort behind one that hasn't been.
+        //
+        // isRepeat drives the on-screen label and must NOT be live, or a video
+        // would relabel itself as a repeat while the viewer is still watching it
+        // for the first time.
+        function wasSeen(videoId) {
+            return Object.prototype.hasOwnProperty.call(seen, videoId);
+        }
+
+        function isRepeat(videoId) {
+            return Object.prototype.hasOwnProperty.call(seenAtLoad, videoId);
+        }
+
+        function forgetViewing() {
+            seen = Object.create(null);
+            seenAtLoad = Object.create(null);
+            var store = storage();
+            if (store) { try { store.removeItem(SEEN_KEY); } catch (e) {} }
+            channels = Object.create(null);   // rebuild every running order
+            current = null;
+            tuneTo(channelIndex);
+        }
 
         // Each channel keeps its own running order and its own cursor, and holds on
         // to them for the whole session. That's what makes the dial feel like a real
@@ -623,6 +730,7 @@
             dossierMeta: document.getElementById('dossierMeta'),
             dossierBody: document.getElementById('dossierBody'),
             dossierFoot: document.getElementById('dossierFoot'),
+            forget: document.getElementById('forgetLink'),
             channelValue: document.getElementById('channelValue'),
             channelKnob: document.getElementById('channelKnob'),
             volumeValue: document.getElementById('volumeValue'),
@@ -671,15 +779,35 @@
                 return Array.isArray(v.tags) && v.tags.indexOf(ch.tag) !== -1;
             });
 
+            // Split on what this viewer has already watched, order each half by the
+            // channel's own rule, then put the unseen half first. A returning
+            // visitor gets something new; once they're through it the channel keeps
+            // going with repeats rather than dead-ending, which is what a real
+            // station does. Note that Latest stays newest-first *within* each half,
+            // so the freshest unseen video still leads.
+            var fresh = [];
+            var repeats = [];
+            items.forEach(function (v) {
+                (wasSeen(v.videoId) ? repeats : fresh).push(v);
+            });
+
             if (ch.order === 'newest') {
-                items.sort(function (a, b) {
+                var byDate = function (a, b) {
                     return String(b.addedAt || '').localeCompare(String(a.addedAt || ''));
-                });
+                };
+                fresh.sort(byDate);
+                repeats.sort(byDate);
             } else {
-                shuffle(items);
+                shuffle(fresh);
+                shuffle(repeats);
             }
 
-            channels[ch.id] = { queue: items, index: 0, seen: 0, offAir: false };
+            channels[ch.id] = {
+                queue: fresh.concat(repeats),
+                index: 0,
+                seen: 0,
+                offAir: false
+            };
             return channels[ch.id];
         }
 
@@ -687,7 +815,12 @@
         // new shuffle, cursor back to the top. This is also what stops a long visit
         // from looping the same fixed order forever.
         function signBackOn(ch, state) {
-            if (ch.order === 'shuffle') shuffle(state.queue);
+            // Rebuild rather than just reshuffle: anything watched during this
+            // session should now sort to the back like any other repeat.
+            delete channels[ch.id];
+            var rebuilt = stateFor(ch);
+            state.queue = rebuilt.queue;
+            channels[ch.id] = state;
             state.index = 0;
             state.seen = 0;
             state.offAir = false;
@@ -948,7 +1081,8 @@
             if (current.offAir) { showSignOff(); return; }
 
             var video = current.queue[current.index];
-            el.info.textContent = video.title || video.videoId;
+            el.info.textContent = (video.title || video.videoId) +
+                (isRepeat(video.videoId) ? '  ·  repeat' : '');
             hideCard();
             hidePsa();
             renderDossier(video);
@@ -1092,6 +1226,15 @@
                             disarmWatchdog();
                             hideCard();
                         }
+
+                        // Only actually playing counts as watched. Recording it on
+                        // load would mean a video the viewer never saw -- because
+                        // they tuned straight past it -- would never come round
+                        // again.
+                        if (e.data === YT.PlayerState.PLAYING &&
+                            current && current.queue.length) {
+                            markSeen(current.queue[current.index].videoId);
+                        }
                         // Nudge a cued video into playing. Muted playback is normally
                         // allowed; if it still won't start, the viewer can hit play.
                         if (e.data === YT.PlayerState.CUED) player.playVideo();
@@ -1131,6 +1274,16 @@
             else if (e.key.toLowerCase() === 'm') setMuted(!muted);
         });
 
+        el.forget.addEventListener('click', function (e) {
+            e.preventDefault();
+            forgetViewing();
+            el.forget.textContent = 'Viewing history cleared';
+            setTimeout(function () {
+                el.forget.textContent = 'Reset viewing history';
+            }, 2600);
+        });
+
+        loadSeen();
         loadPlaylist()
             .then(function () {
                 tuneTo(0);

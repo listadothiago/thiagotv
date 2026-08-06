@@ -58,6 +58,14 @@ only becomes a watchable channel once it also appears in the `CHANNELS` array in
 whatever you posted most recently is what a visitor sees when the set switches
 on. Backdate or post-date freely — it's a schedule, not a timestamp.
 
+**The set remembers what a viewer watched.** Watched video ids are kept in that
+visitor's own `localStorage` and sent nowhere. Each channel puts unseen videos
+first, so a returning visitor is shown something new rather than whatever
+greeted them last time; once they're through the unseen ones the channel carries
+on with repeats, labelled as such, rather than dead-ending. Entries expire after
+90 days, because a station that never repeats anything eventually has nothing to
+show. There's a reset link under the set.
+
 **Channels remember where you were.** Each channel keeps its own running order
 and cursor for the session. Tuning away burns the video you were on, so coming
 back lands on the next one: the channel behaves as though it kept broadcasting
