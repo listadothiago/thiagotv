@@ -68,6 +68,15 @@ user introduces a tag that isn't there yet (say `documentary`), add the entry to
 that array too, otherwise they'll tag videos that nothing can tune to. New
 channels other than Latest should use `order: 'shuffle'`.
 
+Two flags are worth setting deliberately when adding a channel:
+
+- `repeat: false` — the channel carries only what this viewer hasn't seen and
+  goes to a card when they're caught up. Right for a channel whose promise is
+  newness; wrong for a genre channel, which would switch itself off.
+- `resume: true` — the channel remembers how far into a video the viewer got
+  and picks it up there, capped at six resumes. Worth setting for anything
+  long-form (films, documentaries, full concerts); pointless for short clips.
+
 **Adding several at once** is fine — loop the `add` command. Report them as a
 short list at the end rather than narrating each one.
 

@@ -66,6 +66,16 @@ on with repeats, labelled as such, rather than dead-ending. Entries expire after
 90 days, because a station that never repeats anything eventually has nothing to
 show. There's a reset link under the set.
 
+**Long-form channels pick up where you left off.** A channel marked
+`resume: true` in the `CHANNELS` array — currently Films — remembers how far into
+a film a viewer got and starts them there next time. That memory is capped at six
+resumes per film: someone who has dipped into the same picture six times without
+finishing it isn't going to, and past that the film is treated as watched so the
+channel moves on. Without the cap, one abandoned film would greet that viewer
+forever. Positions are captured on a timer while playing and again the moment the
+dial turns or the tab closes, since those are exactly when the position matters
+and a timer alone would lose the last few seconds.
+
 **Channels remember where you were.** Each channel keeps its own running order
 and cursor for the session. Tuning away burns the video you were on, so coming
 back lands on the next one: the channel behaves as though it kept broadcasting

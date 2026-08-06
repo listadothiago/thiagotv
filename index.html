@@ -577,7 +577,9 @@
             { id: 'psa',      label: 'Bulletin', kind: 'text' },
             { id: 'random',   label: 'Random',   tag: null,        order: 'shuffle' },
             { id: 'music',    label: 'Music',    tag: 'music',     order: 'shuffle' },
-            { id: 'films',    label: 'Films',    tag: 'films',     order: 'shuffle' },
+            // Long-form. `resume: true` makes the channel pick a film up where the
+            // viewer left it -- see the resume block below for why that runs out.
+            { id: 'films',    label: 'Films',    tag: 'films',     order: 'shuffle', resume: true },
             { id: 'nature',   label: 'Nature',   tag: 'nature',    order: 'shuffle' },
             { id: 'comedy',   label: 'Comedy',   tag: 'comedy',    order: 'shuffle' },
             { id: 'vignette', label: 'Vignette', tag: 'vignette',  order: 'shuffle' }
@@ -678,11 +680,154 @@
             return Object.prototype.hasOwnProperty.call(seenAtLoad, videoId);
         }
 
+        // ---- Resume points -------------------------------------------------------
+        // Where the viewer got to in a long film. Dropping someone back at 00:00 of a
+        // ninety-minute picture is the one place the "just keep broadcasting" model
+        // falls down, so channels marked `resume: true` remember the position.
+        //
+        // It runs out deliberately. Someone who has dipped into the same film six
+        // times and never finished it isn't going to; past that the film stops being
+        // offered as unfinished business and is treated as watched, so the channel
+        // moves on to something else. Without a cap, one abandoned film would greet
+        // that viewer forever.
+        var RESUME_KEY = 'thiagotv.resume.v1';
+        var MAX_RESUMES = 6;
+        var RESUME_MIN_SECONDS = 30;   // below this, just start it again
+        var RESUME_END_MARGIN = 90;    // this close to the end counts as finished
+        var PROGRESS_MS = 5000;
+
+        var resumePoints = Object.create(null);  // videoId -> { t: seconds, n: resumes }
+        var progressTimer = null;
+
+        function loadResume() {
+            var store = storage();
+            if (!store) return;
+            try {
+                var raw = JSON.parse(store.getItem(RESUME_KEY) || '{}');
+                Object.keys(raw).forEach(function (id) {
+                    var r = raw[id];
+                    if (r && typeof r.t === 'number' && typeof r.n === 'number') {
+                        resumePoints[id] = { t: r.t, n: r.n };
+                    }
+                });
+            } catch (e) {
+                console.warn('ThiagoTV: could not read resume points', e);
+            }
+        }
+
+        // Merged for the same reason as the watch history: two tabs share storage but
+        // not memory, and a plain write loses whatever the other tab was watching.
+        function saveResume() {
+            var store = storage();
+            if (!store) return;
+            try {
+                var merged = {};
+                try {
+                    var existing = JSON.parse(store.getItem(RESUME_KEY) || '{}');
+                    Object.keys(existing).forEach(function (id) {
+                        var r = existing[id];
+                        if (r && typeof r.t === 'number') merged[id] = { t: r.t, n: r.n || 0 };
+                    });
+                } catch (e) { /* unreadable: this write replaces it */ }
+
+                Object.keys(resumePoints).forEach(function (id) {
+                    var mine = resumePoints[id];
+                    var theirs = merged[id];
+                    merged[id] = {
+                        // Furthest position and highest count both win: whichever tab
+                        // got further has the more useful answer.
+                        t: theirs ? Math.max(mine.t, theirs.t) : mine.t,
+                        n: theirs ? Math.max(mine.n, theirs.n || 0) : mine.n
+                    };
+                });
+
+                store.setItem(RESUME_KEY, JSON.stringify(merged));
+            } catch (e) {
+                console.warn('ThiagoTV: could not save resume points', e);
+            }
+        }
+
+        function clearResume(videoId) {
+            delete resumePoints[videoId];
+            var store = storage();
+            if (!store) return;
+            try {
+                var raw = JSON.parse(store.getItem(RESUME_KEY) || '{}');
+                delete raw[videoId];
+                store.setItem(RESUME_KEY, JSON.stringify(raw));
+            } catch (e) { /* nothing worth doing about it */ }
+        }
+
+        function stopProgressTracking() {
+            if (progressTimer) { clearInterval(progressTimer); progressTimer = null; }
+        }
+
+        // Take a reading right now. The interval alone would lose up to five seconds
+        // of a film whenever someone turns the dial or shuts the tab -- exactly the
+        // two moments a resume point matters most.
+        function captureProgress() {
+            if (!current || !current.resume || !current.queue.length) return;
+            if (!player || !playerReady || !expectingPlayback) return;
+            var video = current.queue[current.index];
+            var t, d;
+            try {
+                t = player.getCurrentTime();
+                d = player.getDuration();
+            } catch (e) { return; }
+            if (!t || !d) return;
+
+            if (d - t <= RESUME_END_MARGIN || t <= RESUME_MIN_SECONDS) {
+                clearResume(video.videoId);
+                return;
+            }
+            var existing = resumePoints[video.videoId];
+            resumePoints[video.videoId] = { t: t, n: existing ? existing.n : 0 };
+            saveResume();
+        }
+
+        function startProgressTracking(videoId) {
+            stopProgressTracking();
+            progressTimer = setInterval(function () {
+                if (!player || !playerReady || !expectingPlayback) return;
+                var t, d;
+                try {
+                    t = player.getCurrentTime();
+                    d = player.getDuration();
+                } catch (e) { return; }
+                if (!t || !d) return;
+
+                // Near the end is finished, not a place to come back to.
+                if (d - t <= RESUME_END_MARGIN) {
+                    clearResume(videoId);
+                    return;
+                }
+                var existing = resumePoints[videoId];
+                resumePoints[videoId] = { t: t, n: existing ? existing.n : 0 };
+                saveResume();
+            }, PROGRESS_MS);
+        }
+
+        function formatClock(seconds) {
+            var s = Math.max(0, Math.floor(seconds));
+            var h = Math.floor(s / 3600);
+            var m = Math.floor((s % 3600) / 60);
+            var sec = s % 60;
+            var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+            return h > 0 ? h + ':' + pad(m) + ':' + pad(sec) : m + ':' + pad(sec);
+        }
+
         function forgetViewing() {
             seen = Object.create(null);
             seenAtLoad = Object.create(null);
+            resumePoints = Object.create(null);
+            stopProgressTracking();
             var store = storage();
-            if (store) { try { store.removeItem(SEEN_KEY); } catch (e) {} }
+            if (store) {
+                try {
+                    store.removeItem(SEEN_KEY);
+                    store.removeItem(RESUME_KEY);
+                } catch (e) {}
+            }
             channels = Object.create(null);   // rebuild every running order
             current = null;
             tuneTo(channelIndex);
@@ -701,6 +846,7 @@
         var playerReady = false;
         var muted = true;        // start muted so autoplay is never blocked
         var pendingVideo = null; // set before the player exists
+        var pendingStartAt = 0;  // resume position for that pending video
 
         // True only while a video is meant to be on screen. The player keeps
         // emitting state changes after we stop it -- stopVideo() alone reports CUED,
@@ -831,6 +977,7 @@
                 seen: 0,
                 offAir: false,
                 allowRepeats: allowRepeats,
+                resume: ch.resume === true,
                 // Distinguishes "this channel carries nothing" from "you've watched
                 // everything it carries" -- the viewer deserves a different sentence
                 // for each.
@@ -1146,18 +1293,48 @@
             if (current.offAir) { showSignOff(); return; }
 
             var video = current.queue[current.index];
-            el.info.textContent = (video.title || video.videoId) +
-                (isRepeat(video.videoId) ? '  ·  repeat' : '');
+
+            // Work out whether this is a pick-up-where-you-left-off.
+            var startAt = 0;
+            var record = resumePoints[video.videoId];
+            if (current.resume && record &&
+                record.n < MAX_RESUMES && record.t > RESUME_MIN_SECONDS) {
+                startAt = record.t;
+            }
+
+            var label = video.title || video.videoId;
+            if (startAt) {
+                label += '  ·  resuming at ' + formatClock(startAt);
+            } else if (isRepeat(video.videoId)) {
+                label += '  ·  repeat';
+            }
+            el.info.textContent = label;
+
             hideCard();
             hidePsa();
             renderDossier(video);
 
+            if (startAt) {
+                // Spending a resume happens on the attempt, not on finishing: the
+                // count is there to stop an unfinished film following the viewer
+                // around, and stalling at the same point six times still means
+                // they're not watching it.
+                record.n += 1;
+                saveResume();
+                if (record.n >= MAX_RESUMES) {
+                    // Last go. After this the film joins the watched pile and the
+                    // channel stops treating it as unfinished business.
+                    markSeen(video.videoId);
+                }
+            }
+
             expectingPlayback = true;
             if (!playerReady) {
                 pendingVideo = video;
+                pendingStartAt = startAt;
                 return;
             }
-            player.loadVideoById(video.videoId);
+            player.loadVideoById({ videoId: video.videoId, startSeconds: startAt });
             armWatchdog(video.videoId, WATCHDOG_MS);
         }
 
@@ -1226,6 +1403,8 @@
         // were elsewhere.
         function tuneTo(index) {
             disarmWatchdog();
+            captureProgress();          // before anything else moves
+            stopProgressTracking();
             if (current) advanceCursor();
 
             channelIndex = (index + CHANNELS.length) % CHANNELS.length;
@@ -1299,9 +1478,13 @@
                         setMuted(true);
                         if (pendingVideo) {
                             expectingPlayback = true;
-                            player.loadVideoById(pendingVideo.videoId);
+                            player.loadVideoById({
+                                videoId: pendingVideo.videoId,
+                                startSeconds: pendingStartAt
+                            });
                             armWatchdog(pendingVideo.videoId, WATCHDOG_MS);
                             pendingVideo = null;
+                            pendingStartAt = 0;
                         } else {
                             playCurrent();
                         }
@@ -1330,13 +1513,20 @@
                         // again.
                         if (e.data === YT.PlayerState.PLAYING &&
                             current && current.queue.length) {
-                            markSeen(current.queue[current.index].videoId);
+                            var playing = current.queue[current.index];
+                            markSeen(playing.videoId);
+                            if (current.resume) startProgressTracking(playing.videoId);
                         }
                         // Nudge a cued video into playing. Muted playback is normally
                         // allowed; if it still won't start, the viewer can hit play.
                         if (e.data === YT.PlayerState.CUED) player.playVideo();
                         if (e.data === YT.PlayerState.ENDED) {
                             disarmWatchdog();
+                            stopProgressTracking();
+                            // Watched to the end, so there's nothing to come back to.
+                            if (current && current.queue.length) {
+                                clearResume(current.queue[current.index].videoId);
+                            }
                             advanceCursor();
                             playCurrent();
                         }
@@ -1380,7 +1570,16 @@
             }, 2600);
         });
 
+        // Closing the tab and switching away are both "I'm done for now", and both
+        // need the position written before the page stops running. visibilitychange
+        // is the reliable one on mobile, where pagehide often never fires.
+        window.addEventListener('pagehide', captureProgress);
+        document.addEventListener('visibilitychange', function () {
+            if (document.visibilityState === 'hidden') captureProgress();
+        });
+
         loadSeen();
+        loadResume();
         loadPlaylist()
             .then(function () {
                 tuneTo(0);
