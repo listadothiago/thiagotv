@@ -1,4 +1,8 @@
 {
+  "site": {
+    "title": "ThiagoTV",
+    "url": "https://thiagotv.vercel.app"
+  },
   "playlist": [
     {
       "videoId": "ih-rl9tnXss",
