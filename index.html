@@ -198,6 +198,22 @@
             .card-sub { font-size: 9px; }
         }
 
+        .stage-nav {
+            width: 100%;
+            text-align: center;
+            padding-bottom: 10px;
+        }
+        .stage-nav a {
+            color: #7fd4ff;
+            font-size: 12px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            text-decoration: none;
+            border-bottom: 1px solid rgba(127, 212, 255, .35);
+            padding-bottom: 3px;
+        }
+        .stage-nav a:hover { color: #c9a961; border-bottom-color: #c9a961; }
+
         /* ---- Dossier ----------------------------------------------------------
            Programme notes for whatever is on screen, presented as a duplicated
            sheet from a station archive: aged stock, serif body, typewriter
@@ -509,6 +525,12 @@
         <div class="dossier-body" id="dossierBody"></div>
         <footer class="dossier-foot" id="dossierFoot"></footer>
     </article>
+
+    <!-- A real anchor, not a scripted one: this is how a crawler finds its way
+         from the front page into the generated programme pages. -->
+    <nav class="stage-nav">
+      <a href="guide.html">Programme guide — every broadcast, with notes</a>
+    </nav>
   </div>
 
     <script>

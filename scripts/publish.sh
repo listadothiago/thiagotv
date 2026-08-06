@@ -19,6 +19,14 @@ if ! git remote get-url origin >/dev/null 2>&1; then
     exit 1
 fi
 
+# Regenerate the crawlable pages before anything is committed. Doing it here
+# rather than by hand is what keeps the static pages from drifting out of sync
+# with playlist.json -- a stale programme page is worse than none, because it
+# gets indexed.
+echo "Building programme pages..."
+python3 scripts/build.py
+echo
+
 if [[ -z "$(git status --porcelain)" ]]; then
     echo "Nothing has changed since the last publish."
     exit 0
