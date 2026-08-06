@@ -7,72 +7,170 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        body {
-            min-height: 100vh;
-            background: radial-gradient(ellipse at 50% 30%, #1b3a6b 0%, #12244a 45%, #070f22 100%);
-            background-attachment: fixed;
-            font-family: 'Courier New', monospace;
-            padding: 20px;
+        /* The cabinet is drawn in a deliberately small palette with hard edges and
+           unblurred shadows -- the vocabulary of a sprite rather than a rendering.
+           Every measurement is a multiple of the same unit so nothing lands on a
+           half-pixel and softens. */
+        :root {
+            --px: 4px;
+            --wood-lit:  #8a5a34;
+            --wood:      #6b4425;
+            --wood-mid:  #573517;
+            --wood-dark: #3b2310;
+            --wood-deep: #241408;
+            --brass:     #e0b356;
+            --brass-dim: #a37f31;
+            --glass:     #05070a;
         }
 
-        /* With nothing below the set, the page is shorter than the window on most
-           screens. Centring keeps the television the object in the room rather than
-           something pinned to the top of a mostly empty page. */
+        body {
+            min-height: 100vh;
+            background: radial-gradient(ellipse at 50% 32%, #1b3a6b 0%, #12244a 45%, #070f22 100%);
+            background-attachment: fixed;
+            font-family: 'Courier New', monospace;
+            /* Generous air top and bottom: the set should sit in the room with the
+               background visible around it, not fill the window. */
+            padding: 9vh 20px 8vh;
+        }
+
         .stage {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: calc(100vh - 40px);
-            gap: 22px;
-            max-width: 900px;
+            gap: 34px;
+            max-width: 780px;
             margin: 0 auto;
         }
 
         .tv-container {
             position: relative;
             width: 100%;
-            aspect-ratio: 4 / 3;
         }
 
-        .tv-frame {
+        /* ---- Antenna ---------------------------------------------------------- */
+        .tv-antenna {
+            position: relative;
+            height: 84px;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+        }
+        .ant-rod {
             position: absolute;
-            inset: 0;
-            background: linear-gradient(90deg, #3d2817 0%, #5c3d2e 25%, #4a3220 50%, #5c3d2e 75%, #3d2817 100%);
-            border-radius: 30px;
+            bottom: 0;
+            width: var(--px);
+            height: 88px;
+            background: linear-gradient(180deg, #cfd6dd 0%, #8e979f 55%, #5d666e 100%);
+            transform-origin: 50% 100%;
+        }
+        .ant-rod.left  { transform: rotate(-34deg); }
+        .ant-rod.right { transform: rotate(34deg); }
+        /* Ball tips, squared off so they read as pixels rather than spheres. */
+        .ant-rod::before {
+            content: '';
+            position: absolute;
+            top: calc(var(--px) * -2);
+            left: calc(var(--px) * -1.5);
+            width: calc(var(--px) * 3);
+            height: calc(var(--px) * 3);
+            background: var(--brass);
+            box-shadow: 0 0 0 var(--px) var(--wood-deep);
+        }
+        .ant-base {
+            position: relative;
+            width: calc(var(--px) * 14);
+            height: calc(var(--px) * 4);
+            background: var(--wood-dark);
             box-shadow:
-                inset 0 2px 5px rgba(255, 255, 255, 0.2),
-                inset 0 -2px 5px rgba(0, 0, 0, 0.8),
-                0 20px 60px rgba(0, 0, 0, 0.9);
-            /* Extra room at the bottom so the brand plate has the cabinet to itself
-               and never rides up into the knob labels. */
-            padding: 36px 50px 76px;
+                0 calc(var(--px) * -1) 0 var(--wood-mid),
+                inset 0 var(--px) 0 rgba(255, 255, 255, .10);
+        }
+
+        /* ---- Cabinet ---------------------------------------------------------- */
+        .tv-frame {
+            position: relative;
+            width: 100%;
+            /* Vertical grain: bands rather than a smooth gradient, so the wood reads
+               as a tiled texture. */
+            background:
+                repeating-linear-gradient(90deg,
+                    rgba(0,0,0,.16) 0 2px, rgba(255,255,255,.03) 2px 6px,
+                    rgba(0,0,0,.08) 6px 10px, transparent 10px 22px),
+                linear-gradient(180deg, var(--wood-lit) 0%, var(--wood) 22%,
+                                        var(--wood-mid) 76%, var(--wood-dark) 100%);
+            padding: calc(var(--px) * 6);
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 22px;
+            gap: calc(var(--px) * 5);
+            /* Stepped corners: the cabinet loses one block from each corner, which is
+               how a rounded object looks when it has to be built out of squares. */
+            clip-path: polygon(
+                12px 0, calc(100% - 12px) 0, 100% 12px,
+                100% calc(100% - 12px), calc(100% - 12px) 100%,
+                12px 100%, 0 calc(100% - 12px), 0 12px);
+            box-shadow:
+                inset 0 var(--px) 0 rgba(255, 255, 255, .16),
+                inset 0 calc(var(--px) * -1) 0 rgba(0, 0, 0, .55),
+                inset var(--px) 0 0 rgba(255, 255, 255, .06),
+                inset calc(var(--px) * -1) 0 0 rgba(0, 0, 0, .35);
+        }
+
+        /* Hard-edged drop shadow, offset in whole units. A blurred shadow would be
+           the one soft thing in an otherwise crisp object. */
+        .tv-container::after {
+            content: '';
+            position: absolute;
+            left: calc(var(--px) * 2);
+            right: calc(var(--px) * -2);
+            top: calc(var(--px) * 2);
+            bottom: calc(var(--px) * -2);
+            background: rgba(0, 0, 0, .5);
+            z-index: -1;
+            clip-path: inherit;
+        }
+
+        /* Recessed inner panel the screen sits inside. */
+        .screen-well {
+            background: var(--wood-deep);
+            padding: calc(var(--px) * 3);
+            box-shadow:
+                inset 0 var(--px) 0 rgba(0, 0, 0, .8),
+                inset 0 calc(var(--px) * -1) 0 rgba(255, 255, 255, .07);
         }
 
         .screen-bezel {
             position: relative;
             width: 100%;
             aspect-ratio: 16 / 9;
-            background: #000;
-            border-radius: 10px;
-            box-shadow:
-                inset 0 2px 8px rgba(0, 0, 0, 0.9),
-                inset 0 -2px 8px rgba(0, 0, 0, 0.5);
-            padding: 8px;
+            background: var(--glass);
+            padding: var(--px);
             overflow: hidden;
+            box-shadow:
+                inset 0 0 0 var(--px) #14181d,
+                inset 0 0 0 calc(var(--px) * 2) #000;
         }
+
+        /* Corner screws, one per corner of the well. */
+        .screen-well { position: relative; }
+        .screen-well::before,
+        .screen-well::after {
+            content: '';
+            position: absolute;
+            top: calc(var(--px) * 1);
+            width: var(--px);
+            height: var(--px);
+            background: var(--brass-dim);
+            box-shadow: 0 0 0 1px rgba(0,0,0,.6);
+        }
+        .screen-well::before { left: calc(var(--px) * 1); }
+        .screen-well::after  { right: calc(var(--px) * 1); }
 
         .screen-inner {
             position: relative;
             width: 100%;
             height: 100%;
             background: #000;
-            border-radius: 6px;
             overflow: hidden;
         }
 
@@ -300,92 +398,154 @@
             white-space: nowrap;
         }
 
-        /* Two knobs, wide apart, with the brand sitting between them at the
-           bottom of the cabinet -- the only controls the set has. */
-        .control-panel {
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            gap: 180px;
+        /* ---- Lower deck -------------------------------------------------------
+           Speaker on the left, maker's plate in the middle, controls on the right:
+           the layout of a set where the tube took the whole top half. */
+        .tv-deck {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            align-items: center;
+            gap: calc(var(--px) * 5);
             width: 100%;
+        }
+
+        /* Punched grille. Two offset dot grids give the staggered holes of a real
+           speaker cloth without an image. */
+        .speaker {
+            height: calc(var(--px) * 15);
+            background-color: var(--wood-deep);
+            background-image:
+                radial-gradient(var(--wood-mid) 1px, transparent 1.4px),
+                radial-gradient(var(--wood-mid) 1px, transparent 1.4px);
+            background-size: calc(var(--px) * 2) calc(var(--px) * 2);
+            background-position: 0 0, var(--px) var(--px);
+            box-shadow:
+                inset 0 var(--px) 0 rgba(0, 0, 0, .7),
+                inset 0 calc(var(--px) * -1) 0 rgba(255, 255, 255, .06);
+        }
+
+        .brand {
+            padding: calc(var(--px) * 2) calc(var(--px) * 3);
+            background: linear-gradient(180deg, var(--wood-dark), var(--wood-deep));
+            color: var(--brass);
+            font-size: 15px;
+            font-weight: bold;
+            letter-spacing: 3px;
+            white-space: nowrap;
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, .18),
+                inset 0 -1px 0 rgba(0, 0, 0, .6);
+            text-shadow: 0 1px 0 rgba(0, 0, 0, .8);
+        }
+
+        .knobs {
+            display: flex;
+            gap: calc(var(--px) * 5);
         }
 
         .knob-group {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 8px;
+            gap: calc(var(--px) * 1);
         }
 
+        /* Square-ish knob with the corners knocked off -- a circle as a sprite
+           would draw one. The stepped clip does the rounding. */
         .knob {
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, #444, #111);
-            box-shadow:
-                inset 0 2px 4px rgba(0, 0, 0, 0.8),
-                0 2px 4px rgba(0, 0, 0, 0.5);
+            width: calc(var(--px) * 11);
+            height: calc(var(--px) * 11);
+            background:
+                linear-gradient(180deg, #4b525a 0%, #2b3036 45%, #14181c 100%);
+            clip-path: polygon(
+                33% 0, 67% 0, 100% 33%, 100% 67%,
+                67% 100%, 33% 100%, 0 67%, 0 33%);
             position: relative;
             cursor: pointer;
-            transition: transform 0.15s;
+            box-shadow: inset 0 calc(var(--px) * -1) 0 rgba(0, 0, 0, .55);
+            transition: filter .12s steps(2);
         }
+        .knob:hover { filter: brightness(1.25); }
+        .knob:active { filter: brightness(.8); }
 
-        .knob:hover { transform: scale(1.05); }
-        .knob:active { transform: scale(0.96); }
-
+        /* Pointer, rotated in fixed steps so it clicks between positions rather
+           than gliding. */
         .knob::before {
             content: '';
             position: absolute;
-            top: 5px;
+            top: var(--px);
             left: 50%;
-            width: 3px;
-            height: 12px;
-            background: #f0a020;
-            border-radius: 2px;
-            transform-origin: 50% 20px;
+            width: var(--px);
+            height: calc(var(--px) * 3);
+            background: var(--brass);
+            transform-origin: 50% calc(var(--px) * 4.5);
             transform: translateX(-50%) rotate(var(--knob-angle, 0deg));
-            transition: transform 0.2s ease-out;
+            transition: transform .25s steps(6);
+        }
+
+        /* Hub cap. */
+        .knob::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: calc(var(--px) * 2);
+            height: calc(var(--px) * 2);
+            margin: calc(var(--px) * -1) 0 0 calc(var(--px) * -1);
+            background: #0b0d10;
         }
 
         .knob-label {
-            font-size: 11px;
-            color: #ddd;
+            font-size: 9px;
+            color: #d8c9a8;
             text-transform: uppercase;
-            letter-spacing: 1px;
+            letter-spacing: 2px;
             text-align: center;
         }
 
         .knob-value {
-            font-size: 11px;
-            color: #c9a961;
+            font-size: 9px;
+            color: var(--brass);
             text-transform: uppercase;
             letter-spacing: 1px;
-            min-height: 14px;
+            min-height: 12px;
         }
 
-        .brand {
-            position: absolute;
-            bottom: 14px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 22px;
-            font-weight: bold;
-            color: #c9a961;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
-            letter-spacing: 3px;
+        /* ---- Feet ------------------------------------------------------------- */
+        .tv-feet {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 calc(var(--px) * 9);
+        }
+        .tv-feet span {
+            width: calc(var(--px) * 9);
+            height: calc(var(--px) * 3);
+            background: var(--wood-deep);
+            box-shadow: inset 0 var(--px) 0 var(--wood-dark);
+            clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 100%, 6px 100%);
         }
 
         @media (max-width: 768px) {
-            .tv-frame { padding: 18px 22px 52px; gap: 14px; }
-            .control-panel { gap: 90px; }
-            .brand { font-size: 16px; bottom: 10px; }
+            :root { --px: 3px; }
+            body { padding: 5vh 12px 4vh; }
+            .tv-antenna { height: 58px; }
+            .ant-rod { height: 62px; }
+            .tv-deck { grid-template-columns: 1fr auto; row-gap: calc(var(--px) * 3); }
+            .brand { grid-column: 1 / -1; text-align: center; font-size: 12px; }
+            .speaker { height: calc(var(--px) * 11); }
         }
     </style>
 </head>
 <body>
   <div class="stage">
     <div class="tv-container">
+        <div class="tv-antenna" aria-hidden="true">
+            <span class="ant-rod left"></span>
+            <span class="ant-rod right"></span>
+            <span class="ant-base"></span>
+        </div>
+
         <div class="tv-frame">
+          <div class="screen-well">
             <div class="screen-bezel">
                 <div class="screen-inner scanlines">
                     <div id="player"></div>
@@ -408,23 +568,30 @@
                     <div class="video-info" id="videoInfo">Warming up the tubes…</div>
                 </div>
             </div>
+          </div>
 
-            <div class="control-panel">
-                <div class="knob-group">
-                    <div class="knob" id="volumeKnob"></div>
-                    <div class="knob-label">Volume</div>
-                    <div class="knob-value" id="volumeValue">Muted</div>
-                </div>
+            <div class="tv-deck">
+                <div class="speaker" aria-hidden="true"></div>
 
-                <div class="knob-group">
-                    <div class="knob" id="channelKnob"></div>
-                    <div class="knob-label">Channel</div>
-                    <div class="knob-value" id="channelValue">Latest</div>
+                <div class="brand">ThiagoTV</div>
+
+                <div class="knobs">
+                    <div class="knob-group">
+                        <div class="knob" id="volumeKnob"></div>
+                        <div class="knob-label">Vol</div>
+                        <div class="knob-value" id="volumeValue">Muted</div>
+                    </div>
+
+                    <div class="knob-group">
+                        <div class="knob" id="channelKnob"></div>
+                        <div class="knob-label">Chan</div>
+                        <div class="knob-value" id="channelValue">Latest</div>
+                    </div>
                 </div>
             </div>
-
-            <div class="brand">ThiagoTV</div>
         </div>
+
+        <div class="tv-feet" aria-hidden="true"><span></span><span></span></div>
     </div>
 
 
