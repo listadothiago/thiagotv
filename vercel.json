@@ -2,14 +2,12 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "headers": [
     {
-      "comment": "The schedule changes every time a video is added, and the set fetches it on load. Letting a CDN hold it would mean new programmes not appearing for visitors until the cache expired.",
       "source": "/playlist.json",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
       ]
     },
     {
-      "comment": "Pages are regenerated on every publish, so they must revalidate too.",
       "source": "/(.*).html",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }
