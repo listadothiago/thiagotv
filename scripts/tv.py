@@ -179,6 +179,50 @@ def cmd_rm(args):
     print(f"Removed: {entry.get('title', video_id)}")
 
 
+DOSSIER_FIELDS = ("summary", "relevance", "controversy")
+
+
+def cmd_doc(args):
+    video_id = extract_id(args.target)
+    data = load()
+    entry = find(data, video_id)
+    if not entry:
+        raise SystemExit(f"{video_id} is not in the playlist.")
+
+    given = {f: getattr(args, f) for f in DOSSIER_FIELDS if getattr(args, f) is not None}
+
+    if args.clear:
+        entry.pop("dossier", None)
+        save(data)
+        print(f"Cleared notes for: {entry['title']}")
+        return
+
+    if not given:
+        doc = entry.get("dossier") or {}
+        print(entry["title"])
+        if not doc:
+            print("  (no notes on file)")
+            return
+        for field in DOSSIER_FIELDS:
+            if doc.get(field):
+                print(f"\n  [{field}]")
+                for line in doc[field].splitlines():
+                    print(f"  {line}")
+        return
+
+    doc = entry.get("dossier") or {}
+    for field, value in given.items():
+        value = value.strip()
+        if value:
+            doc[field] = value
+        else:
+            doc.pop(field, None)
+    entry["dossier"] = doc
+    save(data)
+    print(f"Notes updated for: {entry['title']}")
+    print(f"  sections on file: {', '.join(f for f in DOSSIER_FIELDS if doc.get(f)) or '(none)'}")
+
+
 DEFAULT_PSA_HOURS = 24
 
 
@@ -283,6 +327,14 @@ def main():
     p.add_argument("target")
     p.add_argument("date")
     p.set_defaults(func=cmd_date)
+
+    p = sub.add_parser("doc", help="programme notes shown under the set")
+    p.add_argument("target")
+    p.add_argument("--summary", help="what the video is")
+    p.add_argument("--relevance", help="why it matters culturally")
+    p.add_argument("--controversy", help="disputes or criticism, if any")
+    p.add_argument("--clear", action="store_true", help="remove all notes")
+    p.set_defaults(func=cmd_doc)
 
     p = sub.add_parser("psa", help="the text-only announcement channel")
     psa_sub = p.add_subparsers(dest="psa_command", required=True)

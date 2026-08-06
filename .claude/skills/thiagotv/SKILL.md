@@ -71,6 +71,40 @@ channels other than Latest should use `order: 'shuffle'`.
 **Adding several at once** is fine — loop the `add` command. Report them as a
 short list at the end rather than narrating each one.
 
+## Programme notes (the dossier)
+
+Under the set is an archival-looking sheet with notes about whatever is playing.
+The copy is authored ahead of time and stored per video — nothing is generated in
+the browser.
+
+```
+python3 scripts/tv.py doc <url-or-id> --summary "..." --relevance "..." --controversy "..."
+python3 scripts/tv.py doc <url-or-id>            # print what's on file
+python3 scripts/tv.py doc <url-or-id> --clear
+```
+
+All three sections are optional and can be written separately; passing one leaves
+the others alone. Use `\n\n` inside a value for paragraph breaks.
+
+**Writing these is the actual work, and it's yours.** When the user adds a video,
+offer to write its notes. What makes them worth reading:
+
+- **Summary**: what the thing *is*, concretely — who made it, when, what it
+  sounds or looks like. Not a plot recap and not marketing copy.
+- **Why it matters**: the honest cultural claim. If a video is simply a fun
+  video with no wider significance, say nothing rather than inflating it; an
+  empty section is better than a manufactured one.
+- **Controversy**: only if something real and documented happened. Leave it out
+  otherwise. This section is rendered with a marked margin, so it reads as a
+  flagged note and shouldn't be used for trivia.
+
+**Don't invent facts.** These notes are published under the user's name on a
+public site. If you aren't confident about a date, a chart position, or who did
+what, either leave it out or say plainly that you're unsure and let the user
+confirm. A vague sentence that's true beats a specific one that's wrong. If you
+genuinely don't know a video, say so and ask rather than producing
+authoritative-sounding filler.
+
 ## The Bulletin channel
 
 One channel carries no video: **Bulletin** shows a paragraph of text the user
