@@ -80,5 +80,10 @@
       ],
       "addedAt": "2026-08-06"
     }
-  ]
+  ],
+  "psa": {
+    "text": "Welcome to ThiagoTV. Friday nights are for sci-fi. Everything else is whatever I felt like.",
+    "postedAt": "2026-08-06T20:49:20Z",
+    "hours": 24
+  }
 }

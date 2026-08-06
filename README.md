@@ -33,6 +33,21 @@ python3 scripts/tv.py date <url-or-id> <YYYY-MM-DD>
 Titles are fetched from YouTube automatically. Any link shape works — watch,
 youtu.be, shorts, embed — or a bare video id.
 
+## The Bulletin channel
+
+One channel carries text instead of video — a short announcement that expires on
+its own.
+
+```bash
+python3 scripts/tv.py psa set "Friday sci-fi starts at 9." --hours 24
+python3 scripts/tv.py psa show
+python3 scripts/tv.py psa clear
+```
+
+Expiry is evaluated in the viewer's browser, so a bulletin ages out with nothing
+running server-side. The text stays in `playlist.json` until cleared; it just
+stops being broadcast.
+
 ## How the station works
 
 **Tags are channels.** A video's `tags` decide which channels carry it. A tag

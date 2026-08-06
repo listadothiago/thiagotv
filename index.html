@@ -192,6 +192,55 @@
             .card-sub { font-size: 9px; }
         }
 
+        /* ---- Bulletin ---------------------------------------------------------
+           The text channel. Styled after a station caption slide rather than a
+           web page: fixed frame, generous margins, and phosphor colours, so it
+           reads as something being broadcast rather than something rendered. */
+        .psa-screen {
+            position: absolute;
+            inset: 0;
+            display: none;
+            flex-direction: column;
+            padding: 7% 8%;
+            background:
+                linear-gradient(180deg, rgba(0,0,0,.35) 0%, transparent 30%),
+                radial-gradient(ellipse at 50% 40%, #10314a 0%, #071a2a 70%, #04101a 100%);
+            z-index: 2;
+        }
+        .psa-screen.visible { display: flex; }
+
+        .psa-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            gap: 12px;
+            padding-bottom: 8px;
+            margin-bottom: 14px;
+            border-bottom: 1px solid rgba(201, 169, 97, .4);
+            color: #c9a961;
+            font-size: 11px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            flex: none;
+        }
+        #psaStamp { color: #7fd4ff; letter-spacing: 1px; opacity: .8; }
+
+        .psa-body {
+            flex: 1;
+            overflow-y: auto;
+            color: #eaf6ff;
+            font-size: 17px;
+            line-height: 1.65;
+            text-shadow: 0 0 8px rgba(127, 212, 255, .35);
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        @media (max-width: 768px) {
+            .psa-body { font-size: 12px; line-height: 1.5; }
+            .psa-head { font-size: 9px; letter-spacing: 1px; }
+        }
+
         .video-info {
             position: absolute;
             bottom: 10px;
@@ -305,6 +354,13 @@
                             <div class="card-sub" id="cardSub"></div>
                         </div>
                     </div>
+                    <div class="psa-screen" id="psaScreen">
+                        <div class="psa-head">
+                            <span>ThiagoTV Bulletin</span>
+                            <span id="psaStamp"></span>
+                        </div>
+                        <p class="psa-body" id="psaBody"></p>
+                    </div>
                     <div class="video-info" id="videoInfo">Warming up the tubes…</div>
                 </div>
             </div>
@@ -337,6 +393,9 @@
         // other channel shuffles, which keeps repeat visits from feeling identical.
         var CHANNELS = [
             { id: 'latest',   label: 'Latest',   tag: null,        order: 'newest' },
+            // The one channel that carries no video: a text bulletin that expires
+            // on its own. See renderPsa().
+            { id: 'psa',      label: 'Bulletin', kind: 'text' },
             { id: 'random',   label: 'Random',   tag: null,        order: 'shuffle' },
             { id: 'music',    label: 'Music',    tag: 'music',     order: 'shuffle' },
             { id: 'films',    label: 'Films',    tag: 'films',     order: 'shuffle' },
@@ -346,6 +405,7 @@
         ];
 
         var library = [];        // everything from playlist.json
+        var psa = null;          // the current bulletin, if any
 
         // Each channel keeps its own running order and its own cursor, and holds on
         // to them for the whole session. That's what makes the dial feel like a real
@@ -360,6 +420,13 @@
         var playerReady = false;
         var muted = true;        // start muted so autoplay is never blocked
         var pendingVideo = null; // set before the player exists
+
+        // True only while a video is meant to be on screen. The player keeps
+        // emitting state changes after we stop it -- stopVideo() alone reports CUED,
+        // which looks identical to "a video just loaded fine". Without this flag
+        // those stray events hide the bulletin or the off-air card and restart
+        // playback underneath them.
+        var expectingPlayback = false;
 
         // Videos that would not play in this session. Availability is not a property
         // we can check once at add-time: a video can be pulled, go private, or become
@@ -398,6 +465,9 @@
             cardTitle: document.getElementById('cardTitle'),
             cardSub: document.getElementById('cardSub'),
             snow: document.getElementById('snowCanvas'),
+            psa: document.getElementById('psaScreen'),
+            psaBody: document.getElementById('psaBody'),
+            psaStamp: document.getElementById('psaStamp'),
             channelValue: document.getElementById('channelValue'),
             channelKnob: document.getElementById('channelKnob'),
             volumeValue: document.getElementById('volumeValue'),
@@ -415,6 +485,7 @@
                     library = (data.playlist || []).filter(function (v) {
                         return v && typeof v.videoId === 'string' && v.videoId.length > 0;
                     });
+                    psa = data.psa || null;
                 });
         }
 
@@ -431,6 +502,13 @@
         // watched -- the exact thing the dial is supposed to avoid.
         function stateFor(ch) {
             if (channels[ch.id]) return channels[ch.id];
+
+            // A text channel has no running order to keep -- it shows whatever is
+            // currently posted, or nothing.
+            if (ch.kind === 'text') {
+                channels[ch.id] = { kind: 'text', queue: [], index: 0, seen: 0, offAir: false };
+                return channels[ch.id];
+            }
 
             var items = library.filter(function (v) {
                 if (deadVideos[v.videoId]) return false;
@@ -532,12 +610,61 @@
             if (snowTimer) { clearInterval(snowTimer); snowTimer = null; }
         }
 
+        // ---- Bulletin ------------------------------------------------------------
+        // Expiry is decided here, in the viewer's browser, rather than by anything
+        // deleting the record. That's what lets a bulletin age out on a static site
+        // with nothing running server-side: the text stays in playlist.json until
+        // it's cleared by hand, but stops being broadcast the moment it's stale.
+        var PSA_DEFAULT_HOURS = 24;
+
+        function activePsa() {
+            if (!psa || !psa.text) return null;
+            var posted = new Date(psa.postedAt);
+            if (isNaN(posted)) return null;
+            var hours = typeof psa.hours === 'number' ? psa.hours : PSA_DEFAULT_HOURS;
+            var ageHours = (Date.now() - posted.getTime()) / 3600000;
+            return ageHours < hours ? psa : null;
+        }
+
+        function hidePsa() {
+            el.psa.classList.remove('visible');
+        }
+
+        function renderPsa() {
+            disarmWatchdog();
+            expectingPlayback = false;
+            hideCard();
+            if (player && playerReady) player.stopVideo();
+
+            var live = activePsa();
+            if (!live) {
+                hidePsa();
+                el.info.textContent = 'Bulletin — nothing posted';
+                showCard({
+                    mode: 'testcard',
+                    title: 'No bulletin at this time',
+                    sub: 'Turn the dial to keep watching'
+                });
+                return;
+            }
+
+            var posted = new Date(live.postedAt);
+            el.psaBody.textContent = live.text;
+            el.psaStamp.textContent = posted.toLocaleString(undefined, {
+                month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+            el.psa.classList.add('visible');
+            el.info.textContent = 'Bulletin';
+        }
+
         // ---- Playback ------------------------------------------------------------
         // Nothing scheduled here at all -- the channel exists on the dial but no
         // video carries its tag. Different from having watched everything, and worth
         // saying differently.
         function showEmptyChannel() {
             disarmWatchdog();
+            expectingPlayback = false;
+            hidePsa();
             if (player && playerReady) player.stopVideo();
             el.info.textContent = CHANNELS[channelIndex].label + ' — no programming';
             showCard({
@@ -549,6 +676,8 @@
         // The channel played everything it had. This is a sign-off, not a fault.
         function showSignOff() {
             disarmWatchdog();
+            expectingPlayback = false;
+            hidePsa();
             if (player && playerReady) player.stopVideo();
             el.info.textContent = CHANNELS[channelIndex].label + ' — off air';
             showCard({
@@ -564,13 +693,17 @@
         }
 
         function playCurrent() {
-            if (!current || !current.queue.length) { showEmptyChannel(); return; }
+            if (!current) { showEmptyChannel(); return; }
+            if (current.kind === 'text') { renderPsa(); return; }
+            if (!current.queue.length) { showEmptyChannel(); return; }
             if (current.offAir) { showSignOff(); return; }
 
             var video = current.queue[current.index];
             el.info.textContent = video.title || video.videoId;
             hideCard();
+            hidePsa();
 
+            expectingPlayback = true;
             if (!playerReady) {
                 pendingVideo = video;
                 return;
@@ -684,6 +817,7 @@
                         playerReady = true;
                         setMuted(true);
                         if (pendingVideo) {
+                            expectingPlayback = true;
                             player.loadVideoById(pendingVideo.videoId);
                             armWatchdog(pendingVideo.videoId, WATCHDOG_MS);
                             pendingVideo = null;
@@ -692,6 +826,11 @@
                         }
                     },
                     onStateChange: function (e) {
+                        // Ignore everything the player says once we've moved off a
+                        // video -- those events are echoes of us stopping it, not
+                        // news about something the viewer is watching.
+                        if (!expectingPlayback) return;
+
                         // Any state that means "the video loaded" clears the watchdog.
                         // PLAYING is the obvious one, but CUED and PAUSED matter just
                         // as much: if the browser refuses to autoplay, the video sits
@@ -716,6 +855,7 @@
                         // Don't act on the code — 153 in particular fires on healthy
                         // videos. Just give this one a much shorter rope and let the
                         // watchdog decide.
+                        if (!expectingPlayback) return;
                         if (!current || !current.queue.length) return;
                         var video = current.queue[current.index];
                         console.warn('ThiagoTV: player error', e.data, 'on', video.videoId);

@@ -71,6 +71,37 @@ channels other than Latest should use `order: 'shuffle'`.
 **Adding several at once** is fine — loop the `add` command. Report them as a
 short list at the end rather than narrating each one.
 
+## The Bulletin channel
+
+One channel carries no video: **Bulletin** shows a paragraph of text the user
+posts, and it expires on its own.
+
+```
+python3 scripts/tv.py psa set "text" [--hours N]   # default 24h
+python3 scripts/tv.py psa show                     # what's on air, time left
+python3 scripts/tv.py psa clear                    # pull it early
+```
+
+There is only ever one bulletin — `set` replaces whatever was there. When the
+user asks to change or correct a bulletin, just `set` the new text.
+
+**Expiry is decided in the viewer's browser**, not by anything deleting the
+record. The text stays in `playlist.json` until cleared but stops broadcasting
+once it's older than its window, which is how a bulletin can age out on a site
+with nothing running server-side. So an expired bulletin sitting in the file is
+normal, not a bug — though `psa clear` is worth running if the text is stale
+enough to be confusing to anyone reading the repo.
+
+**Write it as broadcast copy.** It appears as a caption slide on a TV, not as a
+web page: a few sentences at most, no markdown, no links (they aren't
+clickable), no headings. If the user gives you something long or link-heavy,
+say so and offer a trimmed version rather than posting something that overflows
+the screen.
+
+**Watch the tone.** The user talks about this project playfully, and the
+bulletin is the station's voice. Match how they phrased the request rather than
+formalising it.
+
 ## Availability is the page's problem, not yours
 
 Don't try to verify that a video will play before adding it. The player already
@@ -91,15 +122,33 @@ all that's needed locally — no rebuild, no restart. If the user is running the
 local server (`python3 -m http.server 8000` in the project root), tell them to
 refresh `http://localhost:8000`.
 
-## Publishing
+## Publishing is part of the job
 
-The site is hosted on GitHub Pages off the `main` branch, so a playlist change
-isn't live until it's pushed:
+The site is hosted on GitHub Pages off the `main` branch, so a change that isn't
+pushed isn't real — it only exists on this machine. The user has asked for
+publishing to be automatic, so **finish every playlist or channel change by
+running the publish script**:
 
 ```
 ./scripts/publish.sh "add a banger to the music channel"
 ```
 
-Offer to publish after making changes, but don't do it unprompted — pushing is
-what makes the change public, and the user may be queuing up several edits
-before they want any of it to go out.
+Write the message as a short description of what actually changed, the way a
+station log would read — "add two nature shorts", "retire the starter videos",
+"new comedy channel". It becomes the commit message and is the only history of
+how the schedule evolved.
+
+Batch first, publish once. If the user is adding several videos across a few
+messages, it's fine to publish after each — but when you're handling several in
+one go, make all the edits and then publish a single time rather than pushing
+per video.
+
+Two things to still stop for:
+
+- **Deletions.** Removing videos is easy to publish and awkward to walk back.
+  Make the removal, say what went, and confirm before pushing that one.
+- **A failed push.** Don't retry blindly or force. Report what git said — an
+  auth failure, a rejected non-fast-forward, or no network are all different
+  problems with different fixes, and guessing makes it worse.
+
+Tell the user the change is live and that Pages takes a minute or so to rebuild.

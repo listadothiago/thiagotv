@@ -12,6 +12,10 @@ Usage:
     tv.py tag <url-or-id> --add-tags vignette    # append tags
     tv.py rm <url-or-id>
     tv.py date <url-or-id> <YYYY-MM-DD>          # change schedule position
+
+    tv.py psa set "text"  [--hours N]            # post to the PSA channel
+    tv.py psa show                               # what's on air, and for how long
+    tv.py psa clear                              # pull it early
 """
 
 import argparse
@@ -175,6 +179,66 @@ def cmd_rm(args):
     print(f"Removed: {entry.get('title', video_id)}")
 
 
+DEFAULT_PSA_HOURS = 24
+
+
+def psa_status(psa):
+    """Return (is_live, hours_remaining) for a PSA record."""
+    if not psa or not psa.get("text"):
+        return False, 0.0
+    try:
+        posted = dt.datetime.fromisoformat(psa["postedAt"].replace("Z", "+00:00"))
+    except (KeyError, ValueError):
+        return False, 0.0
+    hours = float(psa.get("hours", DEFAULT_PSA_HOURS))
+    age = (dt.datetime.now(dt.timezone.utc) - posted).total_seconds() / 3600
+    return age < hours, max(0.0, hours - age)
+
+
+def cmd_psa_set(args):
+    text = args.text.strip()
+    if not text:
+        raise SystemExit("The bulletin is empty.")
+    if args.hours <= 0:
+        raise SystemExit("--hours must be positive.")
+
+    data = load()
+    data["psa"] = {
+        "text": text,
+        "postedAt": dt.datetime.now(dt.timezone.utc)
+                      .replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "hours": args.hours,
+    }
+    save(data)
+    print(f"On air for the next {args.hours}h:")
+    print(f"  {text}")
+
+
+def cmd_psa_show(args):
+    data = load()
+    psa = data.get("psa")
+    if not psa or not psa.get("text"):
+        print("Nothing on the PSA channel.")
+        return
+    live, remaining = psa_status(psa)
+    print(f'"{psa["text"]}"')
+    if live:
+        print(f"  on air, {remaining:.1f}h remaining (posted {psa['postedAt']})")
+    else:
+        print(f"  expired -- no longer shown (posted {psa['postedAt']})")
+
+
+def cmd_psa_clear(args):
+    data = load()
+    psa = data.get("psa")
+    if not psa or not psa.get("text"):
+        print("Nothing to clear.")
+        return
+    data.pop("psa", None)
+    save(data)
+    print(f'Pulled: "{psa["text"]}"')
+
+
 def cmd_date(args):
     video_id = extract_id(args.target)
     try:
@@ -219,6 +283,21 @@ def main():
     p.add_argument("target")
     p.add_argument("date")
     p.set_defaults(func=cmd_date)
+
+    p = sub.add_parser("psa", help="the text-only announcement channel")
+    psa_sub = p.add_subparsers(dest="psa_command", required=True)
+
+    q = psa_sub.add_parser("set", help="post a bulletin (replaces any current one)")
+    q.add_argument("text", help="the paragraph to display")
+    q.add_argument("--hours", type=float, default=DEFAULT_PSA_HOURS,
+                   help=f"how long it stays on air (default {DEFAULT_PSA_HOURS})")
+    q.set_defaults(func=cmd_psa_set)
+
+    q = psa_sub.add_parser("show", help="what's on air and for how long")
+    q.set_defaults(func=cmd_psa_show)
+
+    q = psa_sub.add_parser("clear", help="pull the bulletin early")
+    q.set_defaults(func=cmd_psa_clear)
 
     args = parser.parse_args()
     args.func(args)
