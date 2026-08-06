@@ -6,7 +6,12 @@
       "tags": [
         "music"
       ],
-      "addedAt": "2026-08-06"
+      "addedAt": "2026-08-06",
+      "dossier": {
+        "summary": "A 1987 single by Sabrina Salerno, an Italian singer working in the Italo disco and hi-NRG style that dominated European dance floors in the late eighties: programmed synth bass, a bright repetitive hook, and a vocal delivered more as attitude than performance. It became her signature record across Europe.",
+        "relevance": "Italo disco was one of the routes by which European electronic pop fed into house and later dance music, and Sabrina was among its most visible faces at the commercial peak. The record is also a clear artefact of how the era sold pop: the song and the video were a single package, and the video did most of the work.",
+        "controversy": "The poolside video is remembered largely for a wardrobe malfunction, and that moment drove much of the song's notoriety and airplay. It's a fair example of how eighties pop marketed young women — the clip's fame rests on an incident rather than on the record."
+      }
     },
     {
       "videoId": "CfaEkKF9ybk",
@@ -14,7 +19,11 @@
       "tags": [
         "films"
       ],
-      "addedAt": "2026-08-06"
+      "addedAt": "2026-08-06",
+      "dossier": {
+        "summary": "A 1977 American science fiction film featuring Christopher Lee, made on a small budget and now circulating freely online. It belongs to the wave of low-cost genre pictures that filled drive-ins and late-night television slots in the seventies.",
+        "relevance": "Its interest today is largely as an artefact of how that market worked: a recognisable star attached to a modest production, distributed cheaply, and later surviving through television and now public video platforms long after the theatrical run was forgotten."
+      }
     },
     {
       "videoId": "hMjQV7w8DIw",
@@ -38,7 +47,11 @@
       "tags": [
         "comedy"
       ],
-      "addedAt": "2026-08-06"
+      "addedAt": "2026-08-06",
+      "dossier": {
+        "summary": "An entry in Honest Trailers, the Screen Junkies series that recuts a film's footage into a mock trailer narrated in the booming voice of movie-trailer convention, with the narration pointing out the film's plot holes, clichés and lapses instead of selling it.",
+        "relevance": "The series is one of the more durable formats native to YouTube: it depends on an audience that has seen enough trailers to recognise the voice being parodied, and it treats film criticism as comedy rather than as review. Its longevity made it a template widely imitated by other channels."
+      }
     },
     {
       "videoId": "6fMERyRz498",
@@ -58,7 +71,11 @@
       "tags": [
         "music"
       ],
-      "addedAt": "2026-08-06"
+      "addedAt": "2026-08-06",
+      "dossier": {
+        "summary": "The second single from Michael Jackson's 1991 album Dangerous, and a new jack swing record rather than a pop-rock one: the production leans on Teddy Riley's swung, hard-edged drum programming. The video is a short film set in ancient Egypt, directed by John Singleton and featuring Eddie Murphy, Iman and Magic Johnson.",
+        "relevance": "It sits at the point where Jackson moved toward the sound Teddy Riley was building, and the video is one of the more ambitious examples of the era's treatment of music videos as short films with feature directors and casts. Its Egyptian setting, staged with a Black cast, was also a deliberate piece of imagery rather than incidental set dressing."
+      }
     },
     {
       "videoId": "6MSU1KCfToY",
@@ -82,7 +99,11 @@
       "tags": [
         "films"
       ],
-      "addedAt": "2026-08-06"
+      "addedAt": "2026-08-06",
+      "dossier": {
+        "summary": "A 1958 Italian adventure film directed by Pietro Francisci, starring Steve Reeves — an American bodybuilder rather than a trained actor — as Hercules. It is a loose assembly of Greek myth built around physical spectacle and colour, made cheaply and aimed squarely at a mass audience.",
+        "relevance": "This is the film that launched the peplum, or sword-and-sandal, cycle: for roughly the next decade Italian studios turned out muscleman epics by the dozen, and Steve Reeves became an international star without much dialogue. Its American release is also a landmark in distribution — the rights were bought and then promoted with an unusually heavy, saturation-style advertising campaign, a template that later became standard practice for wide releases."
+      }
     }
   ],
   "psa": {
