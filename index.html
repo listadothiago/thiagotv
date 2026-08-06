@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ThiagoTV</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: radial-gradient(ellipse at 50% 40%, #1b3a6b 0%, #12244a 45%, #070f22 100%);
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+        }
+
+        .tv-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            aspect-ratio: 4 / 3;
+        }
+
+        .tv-frame {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(90deg, #3d2817 0%, #5c3d2e 25%, #4a3220 50%, #5c3d2e 75%, #3d2817 100%);
+            border-radius: 30px;
+            box-shadow:
+                inset 0 2px 5px rgba(255, 255, 255, 0.2),
+                inset 0 -2px 5px rgba(0, 0, 0, 0.8),
+                0 20px 60px rgba(0, 0, 0, 0.9);
+            /* Extra room at the bottom so the brand plate has the cabinet to itself
+               and never rides up into the knob labels. */
+            padding: 36px 50px 76px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 22px;
+        }
+
+        .screen-bezel {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #000;
+            border-radius: 10px;
+            box-shadow:
+                inset 0 2px 8px rgba(0, 0, 0, 0.9),
+                inset 0 -2px 8px rgba(0, 0, 0, 0.5);
+            padding: 8px;
+            overflow: hidden;
+        }
+
+        .screen-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background: #000;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .scanlines::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                0deg,
+                rgba(0, 0, 0, 0.15),
+                rgba(0, 0, 0, 0.15) 1px,
+                transparent 1px,
+                transparent 2px
+            );
+            pointer-events: none;
+            z-index: 3;
+        }
+
+        #player, #player iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            border-radius: 6px;
+        }
+
+        /* ---- The screen card -------------------------------------------------
+           Covers the player whenever there's nothing to watch: mid-tune, on an
+           empty channel, or at the end of a channel's broadcast. Every variant
+           is drawn in CSS/canvas rather than loaded as an image, so the whole
+           site stays a couple of static files. */
+        .screen-card {
+            position: absolute;
+            inset: 0;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            background: #050505;
+            z-index: 2;
+            overflow: hidden;
+        }
+        .screen-card.visible { display: flex; }
+
+        .card-layer { position: absolute; inset: 0; display: none; }
+        .screen-card[data-mode="bars"]     .layer-bars,
+        .screen-card[data-mode="snow"]     .layer-snow,
+        .screen-card[data-mode="testcard"] .layer-testcard { display: block; }
+
+        /* SMPTE colour bars: seven full-height bars over a castellated strip. */
+        .layer-bars {
+            background:
+                linear-gradient(180deg, transparent 0 74%, #0a0a0a 74% 100%),
+                linear-gradient(90deg,
+                    #bfbfbf 0 14.2857%, #bfbf00 14.2857% 28.5714%,
+                    #00bfbf 28.5714% 42.8571%, #00bf00 42.8571% 57.1428%,
+                    #bf00bf 57.1428% 71.4285%, #bf0000 71.4285% 85.7142%,
+                    #0000bf 85.7142% 100%);
+        }
+        .layer-bars::after {
+            content: '';
+            position: absolute;
+            left: 0; right: 0; bottom: 0; height: 26%;
+            background: linear-gradient(90deg,
+                #00006e 0 14.2857%, #0a0a0a 14.2857% 28.5714%,
+                #bf00bf 28.5714% 42.8571%, #0a0a0a 42.8571% 57.1428%,
+                #00bfbf 57.1428% 71.4285%, #0a0a0a 71.4285% 85.7142%,
+                #bfbfbf 85.7142% 100%);
+        }
+
+        .layer-snow { background: #000; }
+        .layer-snow canvas { width: 100%; height: 100%; display: block; }
+
+        /* Test card: crosshair, rings and a grid, the way a station ident looked
+           between programmes. */
+        .layer-testcard {
+            background:
+                repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px 9%),
+                repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 1px, transparent 1px 9%),
+                radial-gradient(circle at 50% 50%, #16324e 0%, #08131f 70%, #050a10 100%);
+        }
+        .layer-testcard::before,
+        .layer-testcard::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            border: 2px solid rgba(201, 169, 97, .55);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .layer-testcard::before { width: 58%; padding-bottom: 58%; }
+        .layer-testcard::after  { width: 30%; padding-bottom: 30%; border-color: rgba(127,212,255,.45); }
+
+        /* The message plate sits above whichever backdrop is showing. */
+        .card-plate {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 14px 26px;
+            background: rgba(0, 0, 0, .74);
+            border: 1px solid rgba(201, 169, 97, .35);
+            border-radius: 3px;
+            max-width: 80%;
+        }
+        .card-title {
+            color: #f0e2bf;
+            font-size: 15px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            line-height: 1.5;
+        }
+        .card-sub {
+            margin-top: 8px;
+            color: #7fd4ff;
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            opacity: .85;
+        }
+        /* A slow pulse reads as a broadcast holding pattern rather than a frozen
+           page -- it tells the viewer the set is still on. */
+        .screen-card.holding .card-plate { animation: holding 2.6s ease-in-out infinite; }
+        @keyframes holding {
+            0%, 100% { opacity: 1; }
+            50%      { opacity: .55; }
+        }
+
+        @media (max-width: 768px) {
+            .card-title { font-size: 12px; letter-spacing: 2px; }
+            .card-sub { font-size: 9px; }
+        }
+
+        .video-info {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            color: #c9a961;
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 6px 10px;
+            border-radius: 4px;
+            z-index: 2;
+            max-width: 70%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Two knobs, wide apart, with the brand sitting between them at the
+           bottom of the cabinet -- the only controls the set has. */
+        .control-panel {
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            gap: 180px;
+            width: 100%;
+        }
+
+        .knob-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .knob {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #444, #111);
+            box-shadow:
+                inset 0 2px 4px rgba(0, 0, 0, 0.8),
+                0 2px 4px rgba(0, 0, 0, 0.5);
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.15s;
+        }
+
+        .knob:hover { transform: scale(1.05); }
+        .knob:active { transform: scale(0.96); }
+
+        .knob::before {
+            content: '';
+            position: absolute;
+            top: 5px;
+            left: 50%;
+            width: 3px;
+            height: 12px;
+            background: #f0a020;
+            border-radius: 2px;
+            transform-origin: 50% 20px;
+            transform: translateX(-50%) rotate(var(--knob-angle, 0deg));
+            transition: transform 0.2s ease-out;
+        }
+
+        .knob-label {
+            font-size: 11px;
+            color: #ddd;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .knob-value {
+            font-size: 11px;
+            color: #c9a961;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            min-height: 14px;
+        }
+
+        .brand {
+            position: absolute;
+            bottom: 14px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 22px;
+            font-weight: bold;
+            color: #c9a961;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+            letter-spacing: 3px;
+        }
+
+        @media (max-width: 768px) {
+            .tv-frame { padding: 18px 22px 52px; gap: 14px; }
+            .control-panel { gap: 90px; }
+            .brand { font-size: 16px; bottom: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="tv-container">
+        <div class="tv-frame">
+            <div class="screen-bezel">
+                <div class="screen-inner scanlines">
+                    <div id="player"></div>
+                    <div class="screen-card" id="screenCard" data-mode="snow">
+                        <div class="card-layer layer-bars"></div>
+                        <div class="card-layer layer-snow"><canvas id="snowCanvas"></canvas></div>
+                        <div class="card-layer layer-testcard"></div>
+                        <div class="card-plate">
+                            <div class="card-title" id="cardTitle">Please stand by</div>
+                            <div class="card-sub" id="cardSub"></div>
+                        </div>
+                    </div>
+                    <div class="video-info" id="videoInfo">Warming up the tubes…</div>
+                </div>
+            </div>
+
+            <div class="control-panel">
+                <div class="knob-group">
+                    <div class="knob" id="volumeKnob"></div>
+                    <div class="knob-label">Volume</div>
+                    <div class="knob-value" id="volumeValue">Muted</div>
+                </div>
+
+                <div class="knob-group">
+                    <div class="knob" id="channelKnob"></div>
+                    <div class="knob-label">Channel</div>
+                    <div class="knob-value" id="channelValue">Latest</div>
+                </div>
+            </div>
+
+            <div class="brand">ThiagoTV</div>
+        </div>
+    </div>
+
+    <script>
+    (function () {
+        'use strict';
+
+        // ---- Channel definitions -------------------------------------------------
+        // A channel is just a filter + an ordering. "latest" is the front page: newest
+        // first, so whatever you posted most recently is what a visitor sees. Every
+        // other channel shuffles, which keeps repeat visits from feeling identical.
+        var CHANNELS = [
+            { id: 'latest',   label: 'Latest',   tag: null,        order: 'newest' },
+            { id: 'random',   label: 'Random',   tag: null,        order: 'shuffle' },
+            { id: 'music',    label: 'Music',    tag: 'music',     order: 'shuffle' },
+            { id: 'films',    label: 'Films',    tag: 'films',     order: 'shuffle' },
+            { id: 'nature',   label: 'Nature',   tag: 'nature',    order: 'shuffle' },
+            { id: 'comedy',   label: 'Comedy',   tag: 'comedy',    order: 'shuffle' },
+            { id: 'vignette', label: 'Vignette', tag: 'vignette',  order: 'shuffle' }
+        ];
+
+        var library = [];        // everything from playlist.json
+
+        // Each channel keeps its own running order and its own cursor, and holds on
+        // to them for the whole session. That's what makes the dial feel like a real
+        // set: a channel is a thing that exists whether or not you're watching it,
+        // not a list that restarts every time you look. See tuneTo() for the part
+        // that makes it feel *live*.
+        var channels = Object.create(null);   // id -> { queue: [], index: 0 }
+        var current = null;                   // the channel state we're watching
+        var channelIndex = 0;
+
+        var player = null;
+        var playerReady = false;
+        var muted = true;        // start muted so autoplay is never blocked
+        var pendingVideo = null; // set before the player exists
+
+        // Videos that would not play in this session. Availability is not a property
+        // we can check once at add-time: a video can be pulled, go private, or become
+        // embed-restricted long after it lands in the playlist. So the player treats
+        // every failure as "this channel just doesn't carry that one" and rolls on.
+        var deadVideos = Object.create(null);
+
+        // How we decide a video is dead. Error codes turn out to be untrustworthy —
+        // YouTube fires 153 (a referrer/origin check) on perfectly healthy videos, so
+        // acting on the error alone would blank out the whole playlist. What actually
+        // separates a good video from a dead one is simple: a good one starts
+        // playing. So every load arms a watchdog, and reaching PLAYING disarms it.
+        // An error doesn't condemn the video, it just shortens its grace period.
+        var WATCHDOG_MS = 9000;       // no error seen; allow for slow buffering
+        var WATCHDOG_AFTER_ERROR_MS = 2500;
+        var watchdog = null;
+        var watchdogVideoId = null;
+
+        function armWatchdog(videoId, delay) {
+            clearTimeout(watchdog);
+            watchdogVideoId = videoId;
+            watchdog = setTimeout(function () {
+                if (watchdogVideoId === videoId) markDeadAndSkip(videoId);
+            }, delay);
+        }
+
+        function disarmWatchdog() {
+            clearTimeout(watchdog);
+            watchdog = null;
+            watchdogVideoId = null;
+        }
+
+        var el = {
+            info: document.getElementById('videoInfo'),
+            card: document.getElementById('screenCard'),
+            cardTitle: document.getElementById('cardTitle'),
+            cardSub: document.getElementById('cardSub'),
+            snow: document.getElementById('snowCanvas'),
+            channelValue: document.getElementById('channelValue'),
+            channelKnob: document.getElementById('channelKnob'),
+            volumeValue: document.getElementById('volumeValue'),
+            volumeKnob: document.getElementById('volumeKnob')
+        };
+
+        // ---- Playlist loading ----------------------------------------------------
+        function loadPlaylist() {
+            return fetch('playlist.json', { cache: 'no-store' })
+                .then(function (r) {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
+                .then(function (data) {
+                    library = (data.playlist || []).filter(function (v) {
+                        return v && typeof v.videoId === 'string' && v.videoId.length > 0;
+                    });
+                });
+        }
+
+        function shuffle(arr) {
+            for (var i = arr.length - 1; i > 0; i--) {
+                var j = Math.floor(Math.random() * (i + 1));
+                var t = arr[i]; arr[i] = arr[j]; arr[j] = t;
+            }
+            return arr;
+        }
+
+        // Built once per channel per session and then left alone. Reshuffling on every
+        // visit would throw away the cursor and let you land on something you just
+        // watched -- the exact thing the dial is supposed to avoid.
+        function stateFor(ch) {
+            if (channels[ch.id]) return channels[ch.id];
+
+            var items = library.filter(function (v) {
+                if (deadVideos[v.videoId]) return false;
+                if (!ch.tag) return true;
+                return Array.isArray(v.tags) && v.tags.indexOf(ch.tag) !== -1;
+            });
+
+            if (ch.order === 'newest') {
+                items.sort(function (a, b) {
+                    return String(b.addedAt || '').localeCompare(String(a.addedAt || ''));
+                });
+            } else {
+                shuffle(items);
+            }
+
+            channels[ch.id] = { queue: items, index: 0, seen: 0, offAir: false };
+            return channels[ch.id];
+        }
+
+        // Coming back to a channel that finished its run starts a fresh broadcast:
+        // new shuffle, cursor back to the top. This is also what stops a long visit
+        // from looping the same fixed order forever.
+        function signBackOn(ch, state) {
+            if (ch.order === 'shuffle') shuffle(state.queue);
+            state.index = 0;
+            state.seen = 0;
+            state.offAir = false;
+        }
+
+        // ---- The screen card -----------------------------------------------------
+        // Dead air is a real part of watching television, so the empty states get the
+        // same care as the programming. Which backdrop appears is random, because a
+        // station that always failed the same way would stop feeling like a station.
+        var CARD_MODES = ['bars', 'snow', 'testcard'];
+
+        // Sign-off lines, drawn at random. Kept short so they read at a glance on the
+        // small screen, and worded like a caption a station would actually run.
+        var SIGN_OFF = [
+            'We now conclude our broadcast day',
+            'That concludes our programming',
+            'This channel has gone off air',
+            'End of transmission'
+        ];
+        var TROUBLE = [
+            'Technical difficulties',
+            'Please stand by',
+            'Do not adjust your set',
+            'Normal service will resume shortly'
+        ];
+
+        function pick(list) {
+            return list[Math.floor(Math.random() * list.length)];
+        }
+
+        function showCard(opts) {
+            stopSnow();
+            var mode = opts.mode || pick(CARD_MODES);
+            el.card.setAttribute('data-mode', mode);
+            el.card.classList.add('visible');
+            el.card.classList.toggle('holding', opts.holding !== false);
+            el.cardTitle.textContent = opts.title;
+            el.cardSub.textContent = opts.sub || '';
+            if (mode === 'snow') startSnow();
+        }
+
+        function hideCard() {
+            stopSnow();
+            el.card.classList.remove('visible');
+        }
+
+        // ---- Snow ----------------------------------------------------------------
+        // Drawn on a canvas at a deliberately low frame rate and a low resolution:
+        // analogue snow was coarse and flickery, and rendering it at full detail
+        // would look wrong as well as cost more than dead air deserves.
+        var snowTimer = null;
+        var SNOW_W = 160, SNOW_H = 96, SNOW_FPS = 12;
+
+        function startSnow() {
+            var canvas = el.snow;
+            canvas.width = SNOW_W;
+            canvas.height = SNOW_H;
+            var ctx = canvas.getContext('2d');
+            var image = ctx.createImageData(SNOW_W, SNOW_H);
+
+            function frame() {
+                var data = image.data;
+                for (var i = 0; i < data.length; i += 4) {
+                    var v = (Math.random() * 255) | 0;
+                    data[i] = data[i + 1] = data[i + 2] = v;
+                    data[i + 3] = 255;
+                }
+                ctx.putImageData(image, 0, 0);
+            }
+            frame();
+            snowTimer = setInterval(frame, 1000 / SNOW_FPS);
+        }
+
+        function stopSnow() {
+            if (snowTimer) { clearInterval(snowTimer); snowTimer = null; }
+        }
+
+        // ---- Playback ------------------------------------------------------------
+        // Nothing scheduled here at all -- the channel exists on the dial but no
+        // video carries its tag. Different from having watched everything, and worth
+        // saying differently.
+        function showEmptyChannel() {
+            disarmWatchdog();
+            if (player && playerReady) player.stopVideo();
+            el.info.textContent = CHANNELS[channelIndex].label + ' — no programming';
+            showCard({
+                title: pick(TROUBLE),
+                sub: 'Nothing scheduled on this channel · turn the dial'
+            });
+        }
+
+        // The channel played everything it had. This is a sign-off, not a fault.
+        function showSignOff() {
+            disarmWatchdog();
+            if (player && playerReady) player.stopVideo();
+            el.info.textContent = CHANNELS[channelIndex].label + ' — off air';
+            showCard({
+                mode: Math.random() < 0.5 ? 'bars' : 'testcard',
+                title: pick(SIGN_OFF),
+                sub: 'Turn the dial to keep watching'
+            });
+        }
+
+        function deadEnd() {
+            if (current && current.offAir) showSignOff();
+            else showEmptyChannel();
+        }
+
+        function playCurrent() {
+            if (!current || !current.queue.length) { showEmptyChannel(); return; }
+            if (current.offAir) { showSignOff(); return; }
+
+            var video = current.queue[current.index];
+            el.info.textContent = video.title || video.videoId;
+            hideCard();
+
+            if (!playerReady) {
+                pendingVideo = video;
+                return;
+            }
+            player.loadVideoById(video.videoId);
+            armWatchdog(video.videoId, WATCHDOG_MS);
+        }
+
+        // Move the current channel's cursor forward. Used when a video ends on its
+        // own, and when you tune away (see tuneTo). Once the cursor has been moved
+        // past every video the channel carries, the channel is out of programming
+        // and signs off rather than quietly looping back to the top.
+        function advanceCursor() {
+            if (!current || !current.queue.length) return;
+            current.seen++;
+            if (current.seen >= current.queue.length) {
+                current.offAir = true;
+                return;
+            }
+            current.index = (current.index + 1) % current.queue.length;
+        }
+
+        function markDeadAndSkip(videoId) {
+            disarmWatchdog();
+            if (!current) return;
+
+            var queue = current.queue;
+            var pos = -1;
+            for (var i = 0; i < queue.length; i++) {
+                if (queue[i].videoId === videoId) { pos = i; break; }
+            }
+            if (pos === -1) return;
+
+            console.warn('ThiagoTV: skipping unavailable video', videoId, queue[pos].title || '');
+            deadVideos[videoId] = true;
+
+            // Pull it out of every channel that carries it, not just this one -- a
+            // video that won't play here won't play on the Music channel either.
+            Object.keys(channels).forEach(function (id) {
+                var st = channels[id];
+                for (var j = st.queue.length - 1; j >= 0; j--) {
+                    if (st.queue[j].videoId !== videoId) continue;
+                    st.queue.splice(j, 1);
+                    // Removing an entry shifts everything after it down, so a cursor
+                    // sitting past the removal has to follow it back.
+                    if (j < st.index) st.index--;
+                    if (st.index >= st.queue.length) st.index = 0;
+                }
+            });
+
+            if (!current.queue.length) { deadEnd(); return; }
+            showCard({ mode: 'snow', title: 'Please stand by', holding: false });
+            setTimeout(playCurrent, 400);
+        }
+
+        // ---- Channels ------------------------------------------------------------
+        // The dial is the only way to move. Tuning away burns the video you were on,
+        // so coming back lands on the next one instead of replaying what you already
+        // sat through -- the channel behaves as though it kept broadcasting while you
+        // were elsewhere.
+        function tuneTo(index) {
+            disarmWatchdog();
+            if (current) advanceCursor();
+
+            channelIndex = (index + CHANNELS.length) % CHANNELS.length;
+            var ch = CHANNELS[channelIndex];
+            current = stateFor(ch);
+
+            // A channel you left off air has had time to start its next broadcast.
+            if (current.offAir) signBackOn(ch, current);
+
+            el.channelValue.textContent = ch.label;
+            el.channelKnob.style.setProperty(
+                '--knob-angle',
+                (channelIndex * (300 / CHANNELS.length)) + 'deg'
+            );
+
+            // A beat of snow between channels: the gap is what sells the dial.
+            showCard({ mode: 'snow', title: 'Tuning', sub: ch.label, holding: false });
+            setTimeout(playCurrent, 400);
+        }
+
+        // ---- Volume --------------------------------------------------------------
+        // The knob is a mute toggle. Starting muted is what lets the TV switch itself
+        // on without the browser blocking autoplay; one click turns the sound on.
+        function setMuted(next) {
+            muted = next;
+            el.volumeValue.textContent = muted ? 'Muted' : 'On';
+            el.volumeKnob.style.setProperty('--knob-angle', muted ? '0deg' : '120deg');
+            if (player && playerReady) {
+                if (muted) player.mute(); else { player.unMute(); player.setVolume(80); }
+            }
+        }
+
+        // ---- YouTube IFrame API --------------------------------------------------
+        // The plain <iframe> embed gives us no error signal — a dead video just shows
+        // "Video unavailable" and sits there. The IFrame API fires onError instead,
+        // which is the whole reason we drive the player through it.
+        window.onYouTubeIframeAPIReady = function () {
+            player = new YT.Player('player', {
+                width: '100%',
+                height: '100%',
+                playerVars: {
+                    autoplay: 1,
+                    rel: 0,
+                    modestbranding: 1,
+                    playsinline: 1
+                },
+                events: {
+                    onReady: function () {
+                        playerReady = true;
+                        setMuted(true);
+                        if (pendingVideo) {
+                            player.loadVideoById(pendingVideo.videoId);
+                            armWatchdog(pendingVideo.videoId, WATCHDOG_MS);
+                            pendingVideo = null;
+                        } else {
+                            playCurrent();
+                        }
+                    },
+                    onStateChange: function (e) {
+                        // Any state that means "the video loaded" clears the watchdog.
+                        // PLAYING is the obvious one, but CUED and PAUSED matter just
+                        // as much: if the browser refuses to autoplay, the video sits
+                        // there perfectly healthy at 0:00, and condemning it would
+                        // wipe out the whole channel one video at a time.
+                        if (e.data === YT.PlayerState.PLAYING ||
+                            e.data === YT.PlayerState.PAUSED ||
+                            e.data === YT.PlayerState.CUED) {
+                            disarmWatchdog();
+                            hideCard();
+                        }
+                        // Nudge a cued video into playing. Muted playback is normally
+                        // allowed; if it still won't start, the viewer can hit play.
+                        if (e.data === YT.PlayerState.CUED) player.playVideo();
+                        if (e.data === YT.PlayerState.ENDED) {
+                            disarmWatchdog();
+                            advanceCursor();
+                            playCurrent();
+                        }
+                    },
+                    onError: function (e) {
+                        // Don't act on the code — 153 in particular fires on healthy
+                        // videos. Just give this one a much shorter rope and let the
+                        // watchdog decide.
+                        if (!current || !current.queue.length) return;
+                        var video = current.queue[current.index];
+                        console.warn('ThiagoTV: player error', e.data, 'on', video.videoId);
+                        armWatchdog(video.videoId, WATCHDOG_AFTER_ERROR_MS);
+                    }
+                }
+            });
+        };
+
+        function injectApi() {
+            var tag = document.createElement('script');
+            tag.src = 'https://www.youtube.com/iframe_api';
+            document.head.appendChild(tag);
+        }
+
+        // ---- Wire up -------------------------------------------------------------
+        el.channelKnob.addEventListener('click', function () { tuneTo(channelIndex + 1); });
+        el.volumeKnob.addEventListener('click', function () { setMuted(!muted); });
+
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'ArrowRight' || e.key === 'ArrowUp') tuneTo(channelIndex + 1);
+            else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') tuneTo(channelIndex - 1);
+            else if (e.key.toLowerCase() === 'm') setMuted(!muted);
+        });
+
+        loadPlaylist()
+            .then(function () {
+                tuneTo(0);
+                injectApi();
+            })
+            .catch(function (err) {
+                console.error('ThiagoTV: could not load playlist.json', err);
+                showCard({
+                    mode: 'testcard',
+                    title: 'Technical difficulties',
+                    sub: 'Could not load the schedule'
+                });
+                el.info.textContent = 'Could not load playlist.json';
+            });
+    })();
+    </script>
+</body>
+</html>
