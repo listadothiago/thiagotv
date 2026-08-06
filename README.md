@@ -93,8 +93,7 @@ for anyway.
 
 ## Publishing
 
-The site is `index.html` and `playlist.json`. Push to the `main` branch and
-GitHub Pages serves them.
+Live at <https://thiagotv.vercel.app>. Pushing to `main` deploys it.
 
 ```bash
 python3 scripts/tv.py add "https://youtu.be/..." --tags music

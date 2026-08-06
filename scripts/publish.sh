@@ -5,7 +5,7 @@
 #   ./scripts/publish.sh                    # "update the schedule"
 #   ./scripts/publish.sh "friday sci-fi"    # your own note
 #
-# GitHub Pages rebuilds on push, so the site is live within a minute or so.
+# Vercel deploys on push, so the site is live within a minute or so.
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -50,5 +50,5 @@ if ! git push origin main; then
 fi
 
 echo
-echo "Published. GitHub Pages usually takes under a minute to rebuild."
-git remote get-url origin
+echo "Published. Vercel usually has it live within a minute."
+echo "https://thiagotv.vercel.app"
