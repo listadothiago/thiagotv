@@ -790,14 +790,56 @@
             clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 100%, 6px 100%);
         }
 
+        /* ---- Portrait on a phone ---------------------------------------------
+           The cabinet is mostly furniture, and on a narrow screen furniture is
+           what eats the picture. Everything decorative shrinks so the tube keeps
+           the width it needs. */
         @media (max-width: 768px) {
             :root { --px: 3px; }
-            body { padding: 5vh 12px 4vh; }
-            .tv-antenna { height: 58px; }
-            .ant-rod { height: 62px; }
-            .tv-deck { grid-template-columns: 1fr auto; row-gap: calc(var(--px) * 3); }
-            .brand { grid-column: 1 / -1; text-align: center; font-size: 12px; }
-            .speaker { height: calc(var(--px) * 11); }
+            body { padding: 3vh 8px 3vh; }
+            .stage { max-width: 100%; gap: 10px; }
+            .tv-frame { padding: calc(var(--px) * 3); gap: calc(var(--px) * 3); }
+            .screen-well { padding: calc(var(--px) * 2); }
+            .tv-antenna { height: 42px; }
+            .ant-rod { height: 46px; }
+            .tv-deck { grid-template-columns: 1fr auto; row-gap: calc(var(--px) * 2); }
+            .brand { grid-column: 1 / -1; text-align: center; font-size: 10px; letter-spacing: 3px; }
+            .speaker { height: calc(var(--px) * 8); }
+            .knobs { gap: calc(var(--px) * 4); }
+            .stage-nav { font-size: 10px; }
+            .stage-nav a { font-size: 10px; letter-spacing: 1px; }
+            .stage-nav a + a { margin-left: 12px; }
+        }
+
+        /* ---- Landscape on a phone --------------------------------------------
+           Here height is the scarce thing, not width. A 16:9 screen inside a
+           cabinet inside a page will not fit a 400px-tall viewport, so the set
+           is sized from the height available and everything that isn't the
+           picture or a control is dropped: antenna, feet, speaker grille and the
+           maker's plate are all decoration, and decoration is what has to go
+           when there is no room. */
+        @media (orientation: landscape) and (max-height: 560px) {
+            :root { --px: 3px; }
+            body { padding: 6px 10px; }
+            .stage {
+                /* Widest the set can be while its screen still fits the viewport:
+                   16/9 for the tube, less the cabinet's own vertical share. */
+                max-width: min(100%, calc(100vh * 1.42));
+                gap: 6px;
+            }
+            .tv-antenna, .tv-feet, .speaker { display: none; }
+            .tv-frame { padding: calc(var(--px) * 2); gap: calc(var(--px) * 2); }
+            .screen-well { padding: var(--px); }
+            .tv-deck {
+                grid-template-columns: 1fr auto;
+                align-items: center;
+                gap: calc(var(--px) * 3);
+            }
+            .brand { grid-column: auto; font-size: 9px; letter-spacing: 2px; }
+            .knob, .power { width: calc(var(--px) * 8); height: calc(var(--px) * 8); }
+            .knob-label { font-size: 7px; letter-spacing: 1px; }
+            .stage-nav { margin-top: 0; padding-bottom: 0; }
+            .stage-now { margin-bottom: 4px; }
         }
     </style>
 </head>
