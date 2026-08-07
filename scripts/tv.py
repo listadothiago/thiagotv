@@ -27,7 +27,8 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 
-PLAYLIST = Path(__file__).resolve().parent.parent / "playlist.json"
+ROOT = Path(__file__).resolve().parent.parent
+PLAYLIST = ROOT / "playlist.json"
 
 # Every shape of YouTube link worth pasting: watch URLs, share links, shorts,
 # embeds, and a bare 11-character id.
@@ -54,18 +55,18 @@ def extract_id(text):
     )
 
 
-def fetch_title(video_id):
-    """Ask YouTube for the video's own title via oEmbed.
+def fetch_oembed(video_id):
+    """Ask YouTube about a video via oEmbed. Returns (data, problem).
 
     oEmbed needs no API key, which keeps the whole project deployable as static
-    files. A failure here is not fatal -- the caller falls back to asking for a
-    title -- but it also tells us something useful: oEmbed returning 401/404 is
+    files. A failure here is not fatal -- the caller can fall back to asking for
+    a title -- but it also tells us something useful: oEmbed returning 401/404 is
     a strong hint the video is private or deleted and would not play anyway.
     """
     url = f"https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v={video_id}&format=json"
     try:
         with urllib.request.urlopen(url, timeout=10) as response:
-            return json.load(response)["title"], None
+            return json.load(response), None
     except urllib.error.HTTPError as exc:
         reason = {401: "private or embedding-disabled", 404: "not found"}.get(
             exc.code, f"HTTP {exc.code}"
@@ -73,6 +74,95 @@ def fetch_title(video_id):
         return None, reason
     except Exception as exc:  # network hiccup, DNS, timeout
         return None, str(exc)
+
+
+def fetch_title(video_id):
+    data, problem = fetch_oembed(video_id)
+    return (data["title"] if data else None), problem
+
+
+def read_channels():
+    """The channel lineup, read from the CHANNELS array in index.html.
+
+    The page is the source of truth for what's on the dial -- a tag only becomes
+    a watchable channel by appearing there -- so this parses it rather than
+    keeping a second list that could drift.
+    """
+    html = (ROOT / "index.html").read_text()
+    block = re.search(r"var CHANNELS = \[(.*?)\];", html, re.S)
+    if not block:
+        return []
+    channels = []
+    for line in block.group(1).splitlines():
+        line = line.strip()
+        if not line.startswith("{"):
+            continue
+        label = re.search(r"label: '([^']+)'", line)
+        tag = re.search(r"tag: '([^']+)'", line)
+        channels.append({
+            "label": label.group(1) if label else "?",
+            "tag": tag.group(1) if tag else None,
+            "text": "kind: 'text'" in line,
+            "everything": "tag: null" in line,
+            "no_repeat": "repeat: false" in line,
+            "resume": "resume: true" in line,
+        })
+    return channels
+
+
+def cmd_channels(args):
+    data = load()
+    videos = data["playlist"]
+    counts = {}
+    for v in videos:
+        for t in (v.get("tags") or []):
+            counts[t] = counts.get(t, 0) + 1
+
+    print(f"{'CHANNEL':<11}{'TAG':<11}{'VIDEOS':>7}   NOTES")
+    print("-" * 52)
+    for ch in read_channels():
+        flags = []
+        if ch["no_repeat"]:
+            flags.append("never repeats")
+        if ch["resume"]:
+            flags.append("resumes")
+        if ch["text"]:
+            n, tag, flags = "-", "-", ["text bulletin"]
+        elif ch["everything"]:
+            n, tag = len(videos), "-"
+            flags = flags or ["everything"]
+        else:
+            n, tag = counts.get(ch["tag"], 0), ch["tag"]
+        print(f"{ch['label']:<11}{str(tag):<11}{str(n):>7}   {' · '.join(flags)}")
+
+    dial_tags = {c["tag"] for c in read_channels() if c["tag"]}
+    orphans = sorted(set(counts) - dial_tags)
+    if orphans:
+        print(f"\nTags with no channel on the dial (invisible): {', '.join(orphans)}")
+
+
+def cmd_inspect(args):
+    """What a video is, without adding it -- so a tag can be chosen on evidence."""
+    video_id = extract_id(args.target)
+    data = load()
+    if find(data, video_id):
+        entry = find(data, video_id)
+        print(f"ALREADY ON THE STATION: {entry['title']}")
+        print(f"  tags: {', '.join(entry.get('tags') or []) or '(none)'}")
+        print(f"  aired: {entry.get('addedAt', '?')}")
+        return
+
+    info, problem = fetch_oembed(video_id)
+    if not info:
+        raise SystemExit(
+            f"Could not look up {video_id} ({problem}).\n"
+            "If this says private/embedding-disabled or not found, it probably "
+            "won't play on the site either."
+        )
+    print(f"id      {video_id}")
+    print(f"title   {info.get('title', '?')}")
+    print(f"channel {info.get('author_name', '?')}")
+    print("\nNot added. Choose tags, then run `add`.")
 
 
 def load():
@@ -327,6 +417,13 @@ def main():
     p.add_argument("target")
     p.add_argument("date")
     p.set_defaults(func=cmd_date)
+
+    p = sub.add_parser("channels", help="the dial: channels, tags and how full each is")
+    p.set_defaults(func=cmd_channels)
+
+    p = sub.add_parser("inspect", help="what a video is, without adding it")
+    p.add_argument("target", help="YouTube URL or 11-character video id")
+    p.set_defaults(func=cmd_inspect)
 
     p = sub.add_parser("doc", help="programme notes shown under the set")
     p.add_argument("target")

@@ -23,6 +23,8 @@ YouTube's player needs a real origin.
 
 ```bash
 python3 scripts/tv.py add <url-or-id> [--title T] [--tags music,films] [--date YYYY-MM-DD]
+python3 scripts/tv.py channels                            # the dial, and how full each channel is
+python3 scripts/tv.py inspect <url-or-id>                 # what a video is, without adding it
 python3 scripts/tv.py list [--tag TAG]
 python3 scripts/tv.py tag <url-or-id> --tags music        # replace tags
 python3 scripts/tv.py tag <url-or-id> --add-tags vignette # append

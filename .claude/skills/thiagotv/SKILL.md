@@ -52,10 +52,57 @@ after, so offer it when the context suggests a themed slot.
 
 ## Working with the user
 
-**Don't interrogate them.** A link plus "add this" is enough to act on. Infer tags
-from what the video obviously is and from how they described it, apply them, and
-say what you chose — it's one command to change. Asking a question per field turns
-a five-second task into a form.
+**Don't interrogate them.** A bare link with no instructions is enough to act on:
+work out where it belongs, put it there, and say what you chose. Asking a question
+per field turns a five-second task into a form, and every choice here is one
+command to undo.
+
+### Placing a video with no instructions
+
+```
+python3 scripts/tv.py channels          # what exists, and how full each channel is
+python3 scripts/tv.py inspect <url>     # title and uploading channel, without adding
+```
+
+Run `channels` first — the lineup drifts, and guessing at a tag that has no
+channel means the video lands somewhere invisible. Then `inspect`, whose title
+and uploader are usually enough to place a video: a VEVO or artist upload is
+`music`, a full feature is `films`, a documentary is `history` or `nature`
+depending on subject, an animated short is `cartoon`.
+
+**Prefer an existing channel.** Reach for the nearest reasonable one rather than
+an exact one. A stand-up clip belongs in `comedy` even if the station has no
+`standup` channel; splitting hairs produces a dial full of near-duplicates.
+
+**A video can carry several tags**, and that's often the honest answer — a music
+documentary is `music` and `history` both. Use that instead of agonising over
+which single channel is right.
+
+### When to create a channel
+
+Only when the video genuinely has no home *and* you'd expect more like it. A
+channel with one video plays that same video to anyone who tunes in, which is
+worse than putting it somewhere approximate. If it's a one-off oddity, tag it
+with the closest existing channel and say you did.
+
+Creating one means two edits, and both are required — a tag without a channel
+entry is invisible on the dial:
+
+1. `add` the video with the new tag
+2. add the entry to `CHANNELS` in `index.html`, with `order: 'shuffle'`, plus
+   `resume: true` if the content is long-form
+
+Position it on the dial by importance: the array order is the order the knob
+cycles through, and with no numbers or names on screen, the far end of the dial
+is the hardest place to reach.
+
+**Say what you decided and why, in one line.** "Put it on Nature — it's a
+wildlife documentary" is enough. The user can redirect it in one command, but
+only if they know where it went.
+
+**When you genuinely can't tell** what a video is from its title and uploader,
+ask rather than guessing. A wrong tag is quiet: it doesn't error, it just puts
+the video on a channel where it makes no sense.
 
 **Do ask when the airdate is genuinely ambiguous** and the stakes are real: "put
 this on for Friday" is clear, but if they describe a scheduling intent you can't
