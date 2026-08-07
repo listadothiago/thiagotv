@@ -11,7 +11,7 @@
  * without a new filename, so they come from the cache.
  */
 
-const VERSION = 'thiagotv-v1';
+const VERSION = 'thiagotv-v2';
 const SHELL = [
   '/',
   '/index.html',
@@ -71,6 +71,18 @@ self.addEventListener('fetch', (event) => {
         caches.open(VERSION).then((c) => c.put(req, copy));
         return res;
       })
-      .catch(() => caches.match(req).then((hit) => hit || caches.match('/index.html')))
+      // Fall back only to a cached copy of *this* page. An earlier version fell
+      // back to index.html for anything that missed, which meant a hiccup while
+      // opening the programme guide silently delivered the television instead --
+      // a wrong page that looks deliberate is worse than an honest failure.
+      .catch(() => caches.match(req).then((hit) => hit || new Response(
+        '<!doctype html><meta charset="utf-8">' +
+        '<title>ThiagoTV — offline</title>' +
+        '<body style="background:#0b1a33;color:#c9a961;font:14px monospace;' +
+        'display:flex;align-items:center;justify-content:center;height:100vh;' +
+        'margin:0;text-align:center">' +
+        '<p>No signal.<br><br><a style="color:#7fd4ff" href="/">Back to ThiagoTV</a></p>',
+        { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } }
+      )))
   );
 });

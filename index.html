@@ -431,18 +431,20 @@
                 inset 0 calc(var(--px) * -1) 0 rgba(255, 255, 255, .06);
         }
 
+        /* The maker's name, stamped into the wood rather than printed on a plate:
+           no panel behind it, and the letters take their colour from the cabinet.
+           A dark edge above and a light edge below is what reads as "pressed in"
+           -- the reverse would read as raised. Small on purpose; a real set wears
+           its brand discreetly. */
         .brand {
-            padding: calc(var(--px) * 2) calc(var(--px) * 3);
-            background: linear-gradient(180deg, var(--wood-dark), var(--wood-deep));
-            color: var(--brass);
-            font-size: 15px;
+            color: rgba(38, 22, 10, .85);
+            font-size: 11px;
             font-weight: bold;
-            letter-spacing: 3px;
+            letter-spacing: 4px;
             white-space: nowrap;
-            box-shadow:
-                inset 0 1px 0 rgba(255, 255, 255, .18),
-                inset 0 -1px 0 rgba(0, 0, 0, .6);
-            text-shadow: 0 1px 0 rgba(0, 0, 0, .8);
+            text-shadow:
+                0 -1px 0 rgba(0, 0, 0, .45),
+                0 1px 0 rgba(214, 168, 116, .38);
         }
 
         .knobs {
@@ -620,11 +622,7 @@
          from the front page into the generated programme pages. -->
     <nav class="stage-nav">
       <a href="guide.html">Programme guide — every broadcast, with notes</a>
-      <p class="stage-note">
-        This set remembers what you've watched so it can show you something new.
-        That memory stays in your browser and is never sent anywhere.
-        <a href="#" id="forgetLink">Reset viewing history</a>
-      </p>
+      <p class="stage-note"><a href="#" id="forgetLink">Reset viewing history</a></p>
     </nav>
   </div>
 
@@ -649,7 +647,6 @@
             // The one channel that carries no video: a text bulletin that expires
             // on its own. See renderPsa().
             { id: 'psa',      label: 'Bulletin', kind: 'text' },
-            { id: 'random',   label: 'Random',   tag: null,        order: 'shuffle' },
             { id: 'music',    label: 'Music',    tag: 'music',     order: 'shuffle' },
             // Long-form. `resume: true` makes the channel pick a film up where the
             // viewer left it -- see the resume block below for why that runs out.
@@ -768,6 +765,33 @@
         // offered as unfinished business and is treated as watched, so the channel
         // moves on to something else. Without a cap, one abandoned film would greet
         // that viewer forever.
+        // Which channel the set was left on. A television doesn't reset to channel
+        // one every time it's switched on, and on a phone -- where the app is
+        // relaunched constantly -- being dropped back on Latest every time would
+        // undo the whole point of having a dial.
+        var CHANNEL_KEY = 'thiagotv.channel.v1';
+
+        function rememberChannel(id) {
+            var store = storage();
+            if (!store) return;
+            try { store.setItem(CHANNEL_KEY, id); } catch (e) {}
+        }
+
+        // First visit lands on Latest. After that the set comes back where it was,
+        // unless that channel no longer exists -- a lineup can change under a
+        // returning viewer, and a missing channel shouldn't leave a blank screen.
+        function startingChannelIndex() {
+            var store = storage();
+            if (!store) return 0;
+            var saved;
+            try { saved = store.getItem(CHANNEL_KEY); } catch (e) { return 0; }
+            if (!saved) return 0;
+            for (var i = 0; i < CHANNELS.length; i++) {
+                if (CHANNELS[i].id === saved) return i;
+            }
+            return 0;
+        }
+
         var RESUME_KEY = 'thiagotv.resume.v1';
         var MAX_RESUMES = 6;
         var RESUME_MIN_SECONDS = 30;   // below this, just start it again
@@ -825,6 +849,9 @@
             }
         }
 
+        // Forget the whole record. Only correct when a video was actually watched
+        // to the end -- there's nothing to return to, and it has earned a clean
+        // slate if it ever comes round again.
         function clearResume(videoId) {
             delete resumePoints[videoId];
             var store = storage();
@@ -834,6 +861,17 @@
                 delete raw[videoId];
                 store.setItem(RESUME_KEY, JSON.stringify(raw));
             } catch (e) { /* nothing worth doing about it */ }
+        }
+
+        // Forget where they got to, but remember how many attempts they've spent.
+        // Used when someone bails out in the first half-minute: there's no useful
+        // position to keep, but wiping the count too would hand a film they keep
+        // abandoning another six chances, and it would never retire.
+        function forgetPosition(videoId) {
+            var existing = resumePoints[videoId];
+            if (!existing) return;
+            resumePoints[videoId] = { t: 0, n: existing.n };
+            saveResume();
         }
 
         function stopProgressTracking() {
@@ -854,8 +892,12 @@
             } catch (e) { return; }
             if (!t || !d) return;
 
-            if (d - t <= RESUME_END_MARGIN || t <= RESUME_MIN_SECONDS) {
-                clearResume(video.videoId);
+            if (d - t <= RESUME_END_MARGIN) {
+                clearResume(video.videoId);   // effectively finished
+                return;
+            }
+            if (t <= RESUME_MIN_SECONDS) {
+                forgetPosition(video.videoId); // too early to be worth returning to
                 return;
             }
             var existing = resumePoints[video.videoId];
@@ -877,6 +919,10 @@
                 // Near the end is finished, not a place to come back to.
                 if (d - t <= RESUME_END_MARGIN) {
                     clearResume(videoId);
+                    return;
+                }
+                if (t <= RESUME_MIN_SECONDS) {
+                    forgetPosition(videoId);
                     return;
                 }
                 var existing = resumePoints[videoId];
@@ -904,6 +950,7 @@
                 try {
                     store.removeItem(SEEN_KEY);
                     store.removeItem(RESUME_KEY);
+                    store.removeItem(CHANNEL_KEY);
                 } catch (e) {}
             }
             channels = Object.create(null);   // rebuild every running order
@@ -1266,10 +1313,44 @@
             else showEmptyChannel();
         }
 
+        // A film the viewer has abandoned six times has had its chances. Past that
+        // it isn't offered again at all: it comes out of the running order for the
+        // session, so the channel moves on to something they haven't seen instead
+        // of restarting the same picture from the top.
+        function isBurnedOut(videoId) {
+            var r = resumePoints[videoId];
+            return !!(r && r.n >= MAX_RESUMES);
+        }
+
+        function dropBurnedOut() {
+            if (!current || !current.resume) return;
+            // Bounded by the queue length: if every remaining video is burned out,
+            // stop rather than spin.
+            var guard = current.queue.length;
+            while (guard-- > 0 && current.queue.length) {
+                var video = current.queue[current.index];
+                if (!isBurnedOut(video.videoId)) return;
+                console.warn('ThiagoTV: retiring an unfinished video', video.videoId);
+                markSeen(video.videoId);
+                current.queue.splice(current.index, 1);
+                if (!current.queue.length) break;
+                if (current.index >= current.queue.length) current.index = 0;
+            }
+        }
+
         function playCurrent() {
             if (!current) { showEmptyChannel(); return; }
             if (current.kind === 'text') { renderPsa(); return; }
-            if (!current.queue.length) { showEmptyChannel(); return; }
+
+            dropBurnedOut();
+
+            if (!current.queue.length) {
+                // Everything this channel carried has either been watched or given
+                // up on, which is the same thing as being caught up.
+                current.caughtUp = true;
+                showEmptyChannel();
+                return;
+            }
             if (current.offAir) { showSignOff(); return; }
 
             var video = current.queue[current.index];
@@ -1394,6 +1475,7 @@
             if (current.offAir) signBackOn(ch, current);
 
             el.channelValue.textContent = ch.label;
+            rememberChannel(ch.id);
             el.channelKnob.style.setProperty(
                 '--knob-angle',
                 (channelIndex * (300 / CHANNELS.length)) + 'deg'
@@ -1572,7 +1654,7 @@
         loadResume();
         loadPlaylist()
             .then(function () {
-                tuneTo(0);
+                tuneTo(startingChannelIndex());
                 injectApi();
             })
             .catch(function (err) {

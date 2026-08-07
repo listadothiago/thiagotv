@@ -59,6 +59,45 @@ ul.programmes .tags {
   display: block; margin-top: 4px; font-size: 10.5px;
   letter-spacing: 2px; text-transform: uppercase; color: #7a6444;
 }
+/* Already-watched entries recede; the ones still to see stay at full strength. */
+ul.programmes li.watched a { color: #7a6444; }
+ul.programmes li.part-watched a { color: #2b2115; }
+ul.programmes .mark {
+  font-style: normal; margin-left: 8px; padding: 1px 5px;
+  background: #ded0b2; color: #6a5636; border-radius: 2px; letter-spacing: 1px;
+}
+ul.programmes li.part-watched .mark { background: #8a2f1d; color: #f3e7d2; }
+
+/* ---- Calendar archive ---- */
+.archive { margin-bottom: 26px; }
+.archive > h2 {
+  font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+  color: #8a2f1d; margin: 0 0 12px;
+}
+.cal-month { margin-bottom: 16px; }
+.cal-month h3 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 15px; font-weight: normal; margin: 0 0 7px; color: #4a3a24;
+}
+.cal-days { display: flex; flex-wrap: wrap; gap: 6px; }
+.cal-day {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-width: 42px; padding: 5px 6px;
+  background: #e2d4b6; border: 1px solid #cbb894;
+  text-decoration: none; color: #2b2115; line-height: 1.15;
+}
+.cal-day:hover { background: #d3c09b; }
+.cal-num { font-size: 14px; font-weight: bold; }
+.cal-count {
+  font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: #7a6444;
+}
+li.date-row { border-bottom: 0 !important; padding: 22px 0 4px !important; }
+li.date-row h2 {
+  font-size: 11px; letter-spacing: 3px; text-transform: uppercase;
+  color: #8a2f1d; margin: 0; display: flex; gap: 10px; align-items: baseline;
+}
+li.date-row:first-child { padding-top: 0 !important; }
+.date-count { font-size: 10px; color: #a08a63; letter-spacing: 1px; }
 @media (max-width: 700px) {
   .sheet { padding: 26px 22px 22px; }
   h1 { font-size: 21px; }

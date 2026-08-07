@@ -74,6 +74,11 @@ depending on subject, an animated short is `cartoon`.
 an exact one. A stand-up clip belongs in `comedy` even if the station has no
 `standup` channel; splitting hairs produces a dial full of near-duplicates.
 
+**The dial is Latest plus one channel per tag.** There is no catch-all shuffle
+channel — Latest covers "what's new" and every other position is a tag. So a
+video with no tag is reachable only from Latest, and once seen, effectively
+gone. Always tag.
+
 **A video can carry several tags**, and that's often the honest answer — a music
 documentary is `music` and `history` both. Use that instead of agonising over
 which single channel is right.
@@ -214,16 +219,25 @@ all that's needed locally — no rebuild, no restart. If the user is running the
 local server (`python3 -m http.server 8000` in the project root), tell them to
 refresh `http://localhost:8000`.
 
-## Publishing is part of the job
+## Publishing is part of the job, always
 
-The site is hosted on GitHub Pages off the `main` branch, so a change that isn't
-pushed isn't real — it only exists on this machine. The user has asked for
-publishing to be automatic, so **finish every playlist or channel change by
-running the publish script**:
+The site is deployed on Vercel from the `main` branch, so a change that isn't
+pushed isn't real — it only exists on this machine. The user has been explicit
+that publishing is not a separate step to be offered: **every change ends with
+the publish script.** Adding a video, retagging one, adding or removing a
+channel, posting a bulletin, editing notes, changing the page itself — all of it
+gets published in the same turn it was made.
 
 ```
 ./scripts/publish.sh "add a banger to the music channel"
 ```
+
+The script rebuilds the generated pages before committing, so never publish by
+hand with raw git commands — that would push a playlist whose programme pages no
+longer match it.
+
+Leaving a change unpublished is the one failure mode the user will not see
+coming: the local files look right, and the live site quietly disagrees.
 
 Write the message as a short description of what actually changed, the way a
 station log would read — "add two nature shorts", "retire the starter videos",
