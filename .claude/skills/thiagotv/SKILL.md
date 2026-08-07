@@ -149,8 +149,19 @@ python3 scripts/tv.py doc <url-or-id> --clear
 All three sections are optional and can be written separately; passing one leaves
 the others alone. Use `\n\n` inside a value for paragraph breaks.
 
-**Writing these is the actual work, and it's yours.** When the user adds a video,
-offer to write its notes. What makes them worth reading:
+**Writing these is the actual work, and it's yours. Every video added gets
+notes in the same turn — this is the default, not an offer.** A video added
+without notes ships a thin page, and thin pages are the site's main SEO
+weakness. Don't ask whether to write them; write them, then publish.
+
+**Go deep.** These pages are the entire text presence of a site whose front page
+is a television, so length and substance are the point. Aim for several
+paragraphs per section rather than a line each: what the thing is and how it was
+made, the scene or industry it came out of, what changed because of it, what it
+influenced, and how its reputation has moved since. Paragraph breaks are `\n\n`
+inside a value — use them.
+
+What makes them worth reading:
 
 - **Summary**: what the thing *is*, concretely — who made it, when, what it
   sounds or looks like. Not a plot recap and not marketing copy.

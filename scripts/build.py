@@ -150,6 +150,21 @@ p {
 }
 .foot a { color: #8a2f1d; }
 .thumb { display: block; width: 100%; height: auto; margin-bottom: 22px; }
+/* The programme itself, so the page is somewhere to watch rather than only to
+   read about. Loaded lazily and from the no-cookie host: a page of notes has no
+   business setting tracking cookies before anyone presses play. */
+.player {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin-bottom: 24px;
+  background: #05070a;
+  box-shadow: 0 0 0 6px #241408, 0 10px 26px rgba(0,0,0,.5);
+}
+.player iframe {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; border: 0;
+}
 ul.programmes { list-style: none; padding: 0; margin: 0; }
 ul.programmes li { border-bottom: 1px solid #d8c9a8; padding: 14px 0; }
 ul.programmes li:last-child { border-bottom: 0; }
@@ -313,7 +328,14 @@ def video_page(video, base_url, station):
 </head>
 <body>
 <main class="sheet">
-<img class="thumb" src="{esc(thumb)}" alt="" loading="lazy">
+<div class="player">
+<iframe src="https://www.youtube-nocookie.com/embed/{esc(vid)}"
+        title="{esc(title)}"
+        loading="lazy"
+        allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"
+        referrerpolicy="strict-origin-when-cross-origin"
+        allowfullscreen></iframe>
+</div>
 <p class="eyebrow">Programme notes</p>
 <h1>{esc(title)}</h1>
 <p class="meta">{'  //  '.join(meta_bits)}</p>
