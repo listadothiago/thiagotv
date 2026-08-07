@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ThiagoTV</title>
+    <meta name="description" content="A retro television set broadcasting a hand-picked playlist. Turn the dial.">
+    <link rel="manifest" href="/manifest.webmanifest">
+    <meta name="theme-color" content="#0b1a33">
+    <link rel="icon" href="/icons/favicon-32.png" sizes="32x32">
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="ThiagoTV">
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -650,7 +658,7 @@
             // Also long-form, so it picks up where the viewer left off.
             { id: 'history',  label: 'History',  tag: 'history',   order: 'shuffle', resume: true },
             { id: 'nature',   label: 'Nature',   tag: 'nature',    order: 'shuffle' },
-            { id: 'cartoon',  label: 'Cartoon',  tag: 'cartoon',   order: 'shuffle' },
+            { id: 'cartoon',  label: 'Cartoon',  tag: 'cartoon',   order: 'shuffle', resume: true },
             { id: 'comedy',   label: 'Comedy',   tag: 'comedy',    order: 'shuffle' },
             { id: 'vignette', label: 'Vignette', tag: 'vignette',  order: 'shuffle' }
         ];
@@ -1548,6 +1556,17 @@
         document.addEventListener('visibilitychange', function () {
             if (document.visibilityState === 'hidden') captureProgress();
         });
+
+        // Registered after load so it never competes with the player for the
+        // connection, and wrapped because a failed registration is not a reason
+        // for the television not to work.
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('/sw.js').catch(function (err) {
+                    console.warn('ThiagoTV: service worker did not register', err);
+                });
+            });
+        }
 
         loadSeen();
         loadResume();
