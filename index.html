@@ -441,7 +441,8 @@
         }
         .stage-nav a:hover { color: #c9a961; border-bottom-color: #c9a961; }
         .stage-nav a + a { margin-left: 22px; }
-        .stage-nav a.hidden { display: none; }
+        .stage-now { margin-bottom: 12px; }
+        .stage-now.hidden { display: none; }
 
         .stage-note {
             margin-top: 8px;
@@ -880,9 +881,10 @@
     <!-- A real anchor, not a scripted one: this is how a crawler finds its way
          from the front page into the generated programme pages. -->
     <nav class="stage-nav">
-      <!-- Points at whatever is on screen. Hidden until there is something to
-           point at, so it never offers a dead link while the set is off. -->
-      <a href="#" id="nowLink" class="hidden">About this programme</a>
+      <!-- Points at whatever is on screen, on its own line above the rest.
+           Hidden until there is something to point at, so it never offers a
+           dead link while the set is off. -->
+      <p class="stage-now hidden"><a href="#" id="nowLink">About this programme</a></p>
       <a href="guide.html">Programme guide</a>
       <p class="stage-note"><a href="#" id="forgetLink">Reset viewing history</a></p>
     </nav>
@@ -1324,6 +1326,7 @@
             psaStamp: document.getElementById('psaStamp'),
             forget: document.getElementById('forgetLink'),
             nowLink: document.getElementById('nowLink'),
+            nowRow: document.querySelector('.stage-now'),
             power: document.getElementById('powerBtn'),
             powerValue: document.getElementById('powerValue'),
             screenOff: document.getElementById('screenOff'),
@@ -1540,7 +1543,7 @@
         }
 
         function renderPsa() {
-            el.nowLink.classList.add('hidden');
+            el.nowRow.classList.add('hidden');
             disarmWatchdog();
             expectingPlayback = false;
             hideCard();
@@ -1574,7 +1577,7 @@
         // video carries its tag. Different from having watched everything, and worth
         // saying differently.
         function showEmptyChannel() {
-            el.nowLink.classList.add('hidden');
+            el.nowRow.classList.add('hidden');
             disarmWatchdog();
             expectingPlayback = false;
             hidePsa();
@@ -1602,7 +1605,7 @@
 
         // The channel played everything it had. This is a sign-off, not a fault.
         function showSignOff() {
-            el.nowLink.classList.add('hidden');
+            el.nowRow.classList.add('hidden');
             disarmWatchdog();
             expectingPlayback = false;
             hidePsa();
@@ -1681,7 +1684,7 @@
             }
             el.info.textContent = label;
             el.nowLink.href = 'v/' + video.videoId + '.html';
-            el.nowLink.classList.remove('hidden');
+            el.nowRow.classList.remove('hidden');
 
             hideCard();
             hidePsa();
@@ -1855,7 +1858,7 @@
 
         function powerOff() {
             if (!powered) return;
-            el.nowLink.classList.add('hidden');
+            el.nowRow.classList.add('hidden');
             powered = false;
             el.power.classList.remove('on');
             el.power.setAttribute('aria-pressed', 'false');
