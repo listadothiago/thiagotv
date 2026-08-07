@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Comedy — ThiagoTV</title>
+<meta name="description" content="Everything on the comedy channel of ThiagoTV — 9 programmes, 1 with notes.">
+<link rel="canonical" href="https://thiagotv.vercel.app/c/comedy.html">
+<link rel="stylesheet" href="../notes.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "Comedy — ThiagoTV",
+  "url": "https://thiagotv.vercel.app/c/comedy.html",
+  "hasPart": [
+    {
+      "@type": "VideoObject",
+      "name": "Dial An Insult   1990",
+      "url": "https://thiagotv.vercel.app/v/2fMTGImPh-8.html"
+    },
+    {
+      "@type": "VideoObject",
+      "name": "When an Astronaut Found a 2000-Year-Old Genie - FIRST EPISODE | I Dream of Jeannie S1E1 Free Episode",
+      "url": "https://thiagotv.vercel.app/v/xUx3qpc_o1k.html"
+    },
+    {
+      "@type": "VideoObject",
+      "name": "Honest Trailers | Mortal Kombat II",
+      "url": "https://thiagotv.vercel.app/v/2EP71ZiSkRQ.html"
+    },
+    {
+      "@type": "VideoObject",
+      "name": "Cut for Time: Goddesses of Creation (Kristen Wiig) - SNL",
+      "url": "https://thiagotv.vercel.app/v/h_DHJrswOKw.html"
+    },
+    {
+      "@type": "VideoObject",
+      "name": "Philomena Cunk on Art",
+      "url": "https://thiagotv.vercel.app/v/W_05mmMhgf4.html"
+    },
+    {
+      "@type": "VideoObject",
+      "name": "Philomena Cunk vs Professor Ronald Hutton",
+      "url": "https://thiagotv.vercel.app/v/L0bPKDZ4tGQ.html"
+    },
+    {
+      "@type": "VideoObject",
+      "name": "Eddie Murphy's RAW - Italian's After They Have Seen Rocky [HD]",
+      "url": "https://thiagotv.vercel.app/v/YMqMKxJJYvY.html"
+    },
+    {
+      "@type": "VideoObject",
+      "name": "When Motivational Speakers Have Sketchy Pasts",
+      "url": "https://thiagotv.vercel.app/v/Ll7A48u2nAw.html"
+    },
+    {
+      "@type": "VideoObject",
+      "name": "The First Guy To Do Everything (COMPILATION)",
+      "url": "https://thiagotv.vercel.app/v/UQyxGUV7oJI.html"
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<main class="sheet">
+<p class="eyebrow">Channel</p>
+<h1>Comedy</h1>
+<p class="meta">9 programmes · 1 with notes</p>
+<hr class="rule">
+<ul class="programmes" id="programmes">
+<li data-id="2fMTGImPh-8"><a href="../v/2fMTGImPh-8.html">Dial An Insult   1990</a><span class="tags">also on <a class="tag-link" href="../c/vignette.html">vignette</a></span></li>
+<li data-id="xUx3qpc_o1k"><a href="../v/xUx3qpc_o1k.html">When an Astronaut Found a 2000-Year-Old Genie - FIRST EPISODE | I Dream of Jeannie S1E1 Free Episode</a></li>
+<li data-id="2EP71ZiSkRQ"><a href="../v/2EP71ZiSkRQ.html">Honest Trailers | Mortal Kombat II</a></li>
+<li data-id="h_DHJrswOKw"><a href="../v/h_DHJrswOKw.html">Cut for Time: Goddesses of Creation (Kristen Wiig) - SNL</a></li>
+<li data-id="W_05mmMhgf4"><a href="../v/W_05mmMhgf4.html">Philomena Cunk on Art</a></li>
+<li data-id="L0bPKDZ4tGQ"><a href="../v/L0bPKDZ4tGQ.html">Philomena Cunk vs Professor Ronald Hutton</a></li>
+<li data-id="YMqMKxJJYvY"><a href="../v/YMqMKxJJYvY.html">Eddie Murphy&#x27;s RAW - Italian&#x27;s After They Have Seen Rocky [HD]</a></li>
+<li data-id="Ll7A48u2nAw"><a href="../v/Ll7A48u2nAw.html">When Motivational Speakers Have Sketchy Pasts</a></li>
+<li data-id="UQyxGUV7oJI"><a href="../v/UQyxGUV7oJI.html">The First Guy To Do Everything (COMPILATION)</a></li>
+</ul>
+<footer class="foot">
+<p><a href="https://thiagotv.vercel.app/">← Back to ThiagoTV</a></p>
+<p><a href="https://thiagotv.vercel.app/guide.html">Programme guide</a></p>
+</footer>
+</main>
+<script>
+/* Marks what this visitor has already watched, reading the same localStorage the
+   set writes. Kept out of the generated HTML on purpose: the page is identical
+   for everyone and for crawlers, and the personal layer is added client-side. */
+(function () {
+  var seen;
+  try {
+    seen = JSON.parse(localStorage.getItem('thiagotv.seen.v1') || '{}');
+  } catch (e) { return; }
+
+  var resume;
+  try {
+    resume = JSON.parse(localStorage.getItem('thiagotv.resume.v1') || '{}');
+  } catch (e) { resume = {}; }
+
+  // Only real programmes -- the date headings are list items too, and counting
+  // them would inflate the total.
+  var items = document.querySelectorAll('#programmes li[data-id]');
+  var watched = 0;
+
+  Array.prototype.forEach.call(items, function (li) {
+    var id = li.getAttribute('data-id');
+    var part = resume[id];
+    // Part-watched is more useful to say than watched: it's the thing you might
+    // want to go back to.
+    // Not every row carries a tag line -- on a channel page it only appears
+    // when the programme is also on another channel -- so the mark goes after
+    // the title when there's nowhere else for it.
+    var slot = li.querySelector('.tags') || li.querySelector('a');
+    if (part && typeof part.t === 'number' && part.t > 30) {
+      li.classList.add('part-watched');
+      var m = Math.floor(part.t / 60), s = Math.floor(part.t % 60);
+      slot.insertAdjacentHTML(
+        'afterend',
+        ' <em class="mark">stopped at ' + m + ':' + (s < 10 ? '0' : '') + s + '</em>'
+      );
+      watched++;
+      return;
+    }
+    if (Object.prototype.hasOwnProperty.call(seen, id)) {
+      li.classList.add('watched');
+      slot.insertAdjacentHTML('afterend', ' <em class="mark">watched</em>');
+      watched++;
+    }
+  });
+
+  var summary = document.getElementById('watchedSummary');
+  if (summary && items.length) {
+    summary.textContent = watched
+      ? 'You have watched ' + watched + ' of ' + items.length + ' programmes.'
+      : '';
+  }
+})();
+</script>
+</body>
+</html>

@@ -98,6 +98,8 @@ li.date-row h2 {
 }
 li.date-row:first-child { padding-top: 0 !important; }
 .date-count { font-size: 10px; color: #a08a63; letter-spacing: 1px; }
+a.tag-link { color: #8a2f1d; text-decoration: none; border-bottom: 1px dotted #b9917f; }
+a.tag-link:hover { background: #e6d6b4; }
 @media (max-width: 700px) {
   .sheet { padding: 26px 22px 22px; }
   h1 { font-size: 21px; }

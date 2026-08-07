@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nature — ThiagoTV</title>
+<meta name="description" content="Everything on the nature channel of ThiagoTV — 5 programmes, 0 with notes.">
+<link rel="canonical" href="https://thiagotv.vercel.app/c/nature.html">
+<link rel="stylesheet" href="../notes.css">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": "Nature — ThiagoTV",
+  "url": "https://thiagotv.vercel.app/c/nature.html",
+  "hasPart": [
+    {
+      "@type": "VideoObject",
+      "name": "Animals That Not Even AI Could Come Up With",
+      "url": "https://thiagotv.vercel.app/v/hMjQV7w8DIw.html"
+    },
+    {
+      "@type": "VideoObject",
+      "name": "Animals That Make No Sense in the Same Place",
+      "url": "https://thiagotv.vercel.app/v/r3V3hAqyzBo.html"
+    },
+    {
+      "@type": "VideoObject",
+      "name": "Watch This Fish \"Drive\" To His Mom To Get Treats | The Dodo",
+      "url": "https://thiagotv.vercel.app/v/SgXlN0x--u8.html"
+    },
+    {
+      "@type": "VideoObject",
+      "name": "The DEADLIEST 12 Mile Coastline on Earth (Recife Shark Attacks)",
+      "url": "https://thiagotv.vercel.app/v/ONVvfte8pS0.html"
+    },
+    {
+      "@type": "VideoObject",
+      "name": "The Wonderful World of Cats - HD Nature Wildlife Documentary",
+      "url": "https://thiagotv.vercel.app/v/eAR3erZ3DrA.html"
+    }
+  ]
+}
+</script>
+</head>
+<body>
+<main class="sheet">
+<p class="eyebrow">Channel</p>
+<h1>Nature</h1>
+<p class="meta">5 programmes · 0 with notes</p>
+<hr class="rule">
+<ul class="programmes" id="programmes">
+<li data-id="hMjQV7w8DIw"><a href="../v/hMjQV7w8DIw.html">Animals That Not Even AI Could Come Up With</a></li>
+<li data-id="r3V3hAqyzBo"><a href="../v/r3V3hAqyzBo.html">Animals That Make No Sense in the Same Place</a></li>
+<li data-id="SgXlN0x--u8"><a href="../v/SgXlN0x--u8.html">Watch This Fish &quot;Drive&quot; To His Mom To Get Treats | The Dodo</a></li>
+<li data-id="ONVvfte8pS0"><a href="../v/ONVvfte8pS0.html">The DEADLIEST 12 Mile Coastline on Earth (Recife Shark Attacks)</a></li>
+<li data-id="eAR3erZ3DrA"><a href="../v/eAR3erZ3DrA.html">The Wonderful World of Cats - HD Nature Wildlife Documentary</a></li>
+</ul>
+<footer class="foot">
+<p><a href="https://thiagotv.vercel.app/">← Back to ThiagoTV</a></p>
+<p><a href="https://thiagotv.vercel.app/guide.html">Programme guide</a></p>
+</footer>
+</main>
+<script>
+/* Marks what this visitor has already watched, reading the same localStorage the
+   set writes. Kept out of the generated HTML on purpose: the page is identical
+   for everyone and for crawlers, and the personal layer is added client-side. */
+(function () {
+  var seen;
+  try {
+    seen = JSON.parse(localStorage.getItem('thiagotv.seen.v1') || '{}');
+  } catch (e) { return; }
+
+  var resume;
+  try {
+    resume = JSON.parse(localStorage.getItem('thiagotv.resume.v1') || '{}');
+  } catch (e) { resume = {}; }
+
+  // Only real programmes -- the date headings are list items too, and counting
+  // them would inflate the total.
+  var items = document.querySelectorAll('#programmes li[data-id]');
+  var watched = 0;
+
+  Array.prototype.forEach.call(items, function (li) {
+    var id = li.getAttribute('data-id');
+    var part = resume[id];
+    // Part-watched is more useful to say than watched: it's the thing you might
+    // want to go back to.
+    // Not every row carries a tag line -- on a channel page it only appears
+    // when the programme is also on another channel -- so the mark goes after
+    // the title when there's nowhere else for it.
+    var slot = li.querySelector('.tags') || li.querySelector('a');
+    if (part && typeof part.t === 'number' && part.t > 30) {
+      li.classList.add('part-watched');
+      var m = Math.floor(part.t / 60), s = Math.floor(part.t % 60);
+      slot.insertAdjacentHTML(
+        'afterend',
+        ' <em class="mark">stopped at ' + m + ':' + (s < 10 ? '0' : '') + s + '</em>'
+      );
+      watched++;
+      return;
+    }
+    if (Object.prototype.hasOwnProperty.call(seen, id)) {
+      li.classList.add('watched');
+      slot.insertAdjacentHTML('afterend', ' <em class="mark">watched</em>');
+      watched++;
+    }
+  });
+
+  var summary = document.getElementById('watchedSummary');
+  if (summary && items.length) {
+    summary.textContent = watched
+      ? 'You have watched ' + watched + ' of ' + items.length + ' programmes.'
+      : '';
+  }
+})();
+</script>
+</body>
+</html>
