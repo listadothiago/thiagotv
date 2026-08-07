@@ -776,6 +776,30 @@
         // undo the whole point of having a dial.
         var CHANNEL_KEY = 'thiagotv.channel.v1';
 
+        // Sound is on unless the viewer turned it off, and the choice is remembered.
+        // Browsers, however, refuse to start an unmuted video without a prior user
+        // gesture -- so "unmuted by default" cannot mean "starts unmuted" on a first
+        // visit. See rescueAutoplay(): the set starts silently rather than not at
+        // all, and takes the sound back the moment the viewer touches anything.
+        var MUTE_KEY = 'thiagotv.muted.v1';
+        var wantsSound = true;    // the viewer's preference
+        var autoMuted = false;    // muted by us to get playback going, not by them
+
+        function loadMutePreference() {
+            var store = storage();
+            if (!store) return;
+            try {
+                var saved = store.getItem(MUTE_KEY);
+                if (saved !== null) wantsSound = saved !== 'muted';
+            } catch (e) {}
+        }
+
+        function rememberMutePreference() {
+            var store = storage();
+            if (!store) return;
+            try { store.setItem(MUTE_KEY, wantsSound ? 'sound' : 'muted'); } catch (e) {}
+        }
+
         function rememberChannel(id) {
             var store = storage();
             if (!store) return;
@@ -1515,13 +1539,43 @@
         // ---- Volume --------------------------------------------------------------
         // The knob is a mute toggle. Starting muted is what lets the TV switch itself
         // on without the browser blocking autoplay; one click turns the sound on.
-        function setMuted(next) {
-            muted = next;
+        function applyMute(isMuted) {
+            muted = isMuted;
             el.volumeValue.textContent = muted ? 'Muted' : 'On';
             el.volumeKnob.style.setProperty('--knob-angle', muted ? '0deg' : '120deg');
             if (player && playerReady) {
                 if (muted) player.mute(); else { player.unMute(); player.setVolume(80); }
             }
+        }
+
+        // Turning the knob is a deliberate choice, so it's the one that gets saved.
+        function setMuted(next) {
+            wantsSound = !next;
+            autoMuted = false;
+            rememberMutePreference();
+            applyMute(next);
+        }
+
+        // If the browser won't start an unmuted video, start a muted one rather than
+        // showing the viewer a dead screen. The preference is untouched -- this is
+        // our compromise, not their decision -- and it's taken back below.
+        function rescueAutoplay() {
+            if (!player || !playerReady || muted) return;
+            var state;
+            try { state = player.getPlayerState(); } catch (e) { return; }
+            if (state === YT.PlayerState.PLAYING) return;
+            autoMuted = true;
+            applyMute(true);
+            try { player.playVideo(); } catch (e) {}
+        }
+
+        // Any gesture at all counts as the interaction browsers are waiting for, so
+        // the sound comes back on the viewer's first click without them having to
+        // know why it was off.
+        function reclaimSound() {
+            if (!autoMuted || !wantsSound) return;
+            autoMuted = false;
+            applyMute(false);
         }
 
         // ---- YouTube IFrame API --------------------------------------------------
@@ -1541,7 +1595,10 @@
                 events: {
                     onReady: function () {
                         playerReady = true;
-                        setMuted(true);
+                        applyMute(!wantsSound);
+                        // Give the browser a moment to accept or refuse unmuted
+                        // playback before deciding whether to fall back.
+                        setTimeout(rescueAutoplay, 2200);
                         if (pendingVideo) {
                             expectingPlayback = true;
                             player.loadVideoById({
@@ -1618,6 +1675,10 @@
         }
 
         // ---- Wire up -------------------------------------------------------------
+        ['pointerdown', 'keydown'].forEach(function (evt) {
+            document.addEventListener(evt, reclaimSound, { once: true });
+        });
+
         el.channelKnob.addEventListener('click', function () { tuneTo(channelIndex + 1); });
         el.volumeKnob.addEventListener('click', function () { setMuted(!muted); });
 
@@ -1655,6 +1716,7 @@
             });
         }
 
+        loadMutePreference();
         loadSeen();
         loadResume();
         loadPlaylist()
