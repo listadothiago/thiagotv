@@ -928,16 +928,14 @@
            dead link while the set is off. -->
       <p class="stage-now hidden">
         <a href="#" id="nowLink">About this programme</a>
-        <!-- Casting is a browser-level function and no web API lets a page
-             start it: screen and tab mirroring live in Chrome's own menu, and
-             the Presentation API only reaches a Chromecast through a registered
-             receiver app, with no mobile browser support at all. So rather than
-             a button that would do nothing on a phone, this hands the programme
-             to YouTube, whose app casts natively. -->
-        <a href="#" id="castLink" rel="noopener"
-           title="Opens in the YouTube app, which can cast. To send this whole television to a TV, use your browser's own Cast or screen-mirroring control.">Watch on YouTube</a>
       </p>
       <a href="guide.html">Programme guide</a>
+      <!-- Only ever shown when the browser has told us the set can be installed
+           and hasn't been. There is no reliable way to ask "is this already
+           installed?", so the question is answered the other way round: the
+           beforeinstallprompt event only fires when installing is genuinely on
+           offer, and running as an installed app suppresses it. -->
+      <a href="#" id="installLink" class="hidden">Install this television</a>
       <p class="stage-note"><a href="#" id="forgetLink">Reset viewing history</a></p>
     </nav>
   </div>
@@ -1377,9 +1375,9 @@
             psaBody: document.getElementById('psaBody'),
             psaStamp: document.getElementById('psaStamp'),
             forget: document.getElementById('forgetLink'),
+            install: document.getElementById('installLink'),
             nowLink: document.getElementById('nowLink'),
             nowRow: document.querySelector('.stage-now'),
-            castLink: document.getElementById('castLink'),
             power: document.getElementById('powerBtn'),
             powerValue: document.getElementById('powerValue'),
             screenOff: document.getElementById('screenOff'),
@@ -1737,8 +1735,6 @@
             }
             el.info.textContent = label;
             el.nowLink.href = 'v/' + video.videoId + '.html';
-            el.castLink.href = 'https://www.youtube.com/watch?v=' + video.videoId;
-            el.castLink.target = '_blank';
             el.nowRow.classList.remove('hidden');
 
             hideCard();
@@ -2049,6 +2045,37 @@
         }
 
         // ---- Wire up -------------------------------------------------------------
+
+        // ---- Install ------------------------------------------------------------
+        // The browser decides whether installing is possible and tells us by firing
+        // this event; we hold on to it so the offer can be made in our own words,
+        // in the place it belongs, rather than through a browser banner. The link
+        // stays hidden until then, so it is never shown to someone who already has
+        // the app or to a browser that can't install it.
+        var installPrompt = null;
+
+        window.addEventListener('beforeinstallprompt', function (e) {
+            e.preventDefault();
+            installPrompt = e;
+            el.install.classList.remove('hidden');
+        });
+
+        el.install.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (!installPrompt) return;
+            installPrompt.prompt();
+            installPrompt.userChoice.then(function () {
+                // Whatever they chose, the prompt is spent and cannot be reused.
+                installPrompt = null;
+                el.install.classList.add('hidden');
+            });
+        });
+
+        // Installed and launched as an app: the offer would be nonsense.
+        window.addEventListener('appinstalled', function () {
+            installPrompt = null;
+            el.install.classList.add('hidden');
+        });
 
         el.power.addEventListener('click', function () {
             if (powered) powerOff(); else powerOn();
