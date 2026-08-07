@@ -390,19 +390,18 @@
             .psa-head { font-size: 9px; letter-spacing: 1px; }
         }
 
+        /* The title stays off the glass -- a television doesn't caption what it's
+           showing, and the screen cards already say the things a viewer actually
+           needs ("all caught up", "no signal"). It remains in the markup, and
+           announced, because a screen reader has no other way to know what is on. */
         .video-info {
             position: absolute;
-            bottom: 10px;
-            left: 10px;
-            color: #c9a961;
-            font-size: 12px;
-            background: rgba(0, 0, 0, 0.7);
-            padding: 6px 10px;
-            border-radius: 4px;
-            z-index: 2;
-            max-width: 70%;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
             overflow: hidden;
-            text-overflow: ellipsis;
+            clip-path: inset(50%);
             white-space: nowrap;
         }
 
@@ -587,7 +586,7 @@
                         </div>
                         <p class="psa-body" id="psaBody"></p>
                     </div>
-                    <div class="video-info" id="videoInfo">Warming up the tubes…</div>
+                    <div class="video-info" id="videoInfo" aria-live="polite">Warming up the tubes…</div>
                 </div>
             </div>
           </div>
