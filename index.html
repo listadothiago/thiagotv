@@ -46,7 +46,7 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 34px;
+            gap: 16px;
             max-width: 780px;
             margin: 0 auto;
         }
@@ -309,9 +309,13 @@
             .card-sub { font-size: 9px; }
         }
 
+        /* Sits just under the set -- close enough to read as part of the object,
+           not so close that it looks stuck to the cabinet. The feet need a little
+           clearance below them or the whole thing looks like it's sinking. */
         .stage-nav {
             width: 100%;
             text-align: center;
+            margin-top: -6px;
             padding-bottom: 10px;
         }
         .stage-nav a {
@@ -326,7 +330,7 @@
         .stage-nav a:hover { color: #c9a961; border-bottom-color: #c9a961; }
 
         .stage-note {
-            margin-top: 14px;
+            margin-top: 8px;
             color: #6f8fb5;
             font-size: 10.5px;
             letter-spacing: 1px;
@@ -437,14 +441,15 @@
            -- the reverse would read as raised. Small on purpose; a real set wears
            its brand discreetly. */
         .brand {
-            color: rgba(38, 22, 10, .85);
-            font-size: 11px;
-            font-weight: bold;
-            letter-spacing: 4px;
+            color: rgba(34, 19, 8, .9);
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 5px;
+            text-transform: uppercase;
             white-space: nowrap;
             text-shadow:
-                0 -1px 0 rgba(0, 0, 0, .45),
-                0 1px 0 rgba(214, 168, 116, .38);
+                0 -1px 0 rgba(0, 0, 0, .5),
+                0 1px 0 rgba(222, 178, 128, .45);
         }
 
         .knobs {
