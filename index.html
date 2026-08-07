@@ -457,6 +457,90 @@
             gap: calc(var(--px) * 5);
         }
 
+        /* ---- Power ------------------------------------------------------------
+           The set starts off. That isn't only styling: a browser will not let a
+           video begin with sound until the viewer has interacted with the page,
+           so the switch doubles as the gesture that earns the audio. Everything
+           after it can play out loud. */
+        .power {
+            width: calc(var(--px) * 11);
+            height: calc(var(--px) * 11);
+            padding: 0;
+            border: 0;
+            cursor: pointer;
+            background: linear-gradient(180deg, #4b525a 0%, #2b3036 45%, #14181c 100%);
+            clip-path: polygon(
+                33% 0, 67% 0, 100% 33%, 100% 67%,
+                67% 100%, 33% 100%, 0 67%, 0 33%);
+            position: relative;
+            box-shadow: inset 0 calc(var(--px) * -1) 0 rgba(0, 0, 0, .55);
+            transition: filter .12s steps(2);
+        }
+        .power:hover { filter: brightness(1.25); }
+        .power:active { filter: brightness(.8); }
+
+        /* The lamp: dead when off, lit when on. */
+        .power::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: 50%;
+            width: calc(var(--px) * 2);
+            height: calc(var(--px) * 2);
+            margin: calc(var(--px) * -1) 0 0 calc(var(--px) * -1);
+            background: #3a1010;
+            transition: background .18s steps(2), box-shadow .18s steps(2);
+        }
+        .power.on::after {
+            background: #ff5a4a;
+            box-shadow: 0 0 calc(var(--px) * 3) #ff5a4a;
+        }
+
+        /* ---- Screen off / switch-on ------------------------------------------- */
+        .screen-off {
+            position: absolute;
+            inset: 0;
+            z-index: 4;
+            background:
+                linear-gradient(145deg, rgba(255,255,255,.045) 0%, transparent 42%),
+                #05070a;
+        }
+        .screen-off.hidden { display: none; }
+
+        /* A tube coming to life: a bright line snaps across the middle, opens out
+           to fill the screen, then fades off the picture. Steps rather than smooth
+           easing, to match everything else about this set. */
+        .crt {
+            position: absolute;
+            inset: 0;
+            z-index: 5;
+            pointer-events: none;
+            display: none;
+            background: #fff;
+        }
+        .crt.firing {
+            display: block;
+            animation: crt-on 620ms steps(1, end) forwards;
+        }
+        @keyframes crt-on {
+            0%   { transform: scale(1, 0.004); opacity: 1; filter: brightness(2); }
+            22%  { transform: scale(1, 0.004); opacity: 1; }
+            45%  { transform: scale(1, 0.05);  opacity: 1; }
+            65%  { transform: scale(1, 1);     opacity: .85; }
+            100% { transform: scale(1, 1);     opacity: 0; }
+        }
+
+        /* Switching off collapses the picture back down to a dot. */
+        .crt.collapsing {
+            display: block;
+            animation: crt-off 420ms steps(1, end) forwards;
+        }
+        @keyframes crt-off {
+            0%   { transform: scale(1, 1);        opacity: .5; }
+            40%  { transform: scale(1, 0.02);     opacity: 1; }
+            75%  { transform: scale(0.06, 0.02);  opacity: 1; }
+            100% { transform: scale(0, 0);        opacity: 0; }
+        }
+
         .knob-group {
             display: flex;
             flex-direction: column;
@@ -593,6 +677,8 @@
                         </div>
                         <p class="psa-body" id="psaBody"></p>
                     </div>
+                    <div class="screen-off" id="screenOff"></div>
+                    <div class="crt" id="crt"></div>
                     <div class="video-info" id="videoInfo" aria-live="polite">Warming up the tubes…</div>
                 </div>
             </div>
@@ -604,6 +690,12 @@
                 <div class="brand">ThiagoTV</div>
 
                 <div class="knobs">
+                    <div class="knob-group">
+                        <button class="power" id="powerBtn" aria-pressed="false" aria-label="Power"></button>
+                        <div class="knob-label">Power</div>
+                        <div class="knob-value" id="powerValue">Off</div>
+                    </div>
+
                     <div class="knob-group">
                         <div class="knob" id="volumeKnob"></div>
                         <div class="knob-label">Vol</div>
@@ -778,10 +870,9 @@
         var CHANNEL_KEY = 'thiagotv.channel.v1';
 
         // Sound is on unless the viewer turned it off, and the choice is remembered.
-        // Browsers, however, refuse to start an unmuted video without a prior user
-        // gesture -- so "unmuted by default" cannot mean "starts unmuted" on a first
-        // visit. See rescueAutoplay(): the set starts silently rather than not at
-        // all, and takes the sound back the moment the viewer touches anything.
+        // Playback only ever begins from the power switch, which is a click, so the
+        // browser's gesture requirement is satisfied and the first video can start
+        // out loud -- no muted-then-unmute compromise needed.
         var MUTE_KEY = 'thiagotv.muted.v1';
         var wantsSound = true;    // the viewer's preference
         var autoMuted = false;    // muted by us to get playback going, not by them
@@ -1051,6 +1142,10 @@
             psaBody: document.getElementById('psaBody'),
             psaStamp: document.getElementById('psaStamp'),
             forget: document.getElementById('forgetLink'),
+            power: document.getElementById('powerBtn'),
+            powerValue: document.getElementById('powerValue'),
+            screenOff: document.getElementById('screenOff'),
+            crt: document.getElementById('crt'),
             channelValue: document.getElementById('channelValue'),
             channelKnob: document.getElementById('channelKnob'),
             volumeValue: document.getElementById('volumeValue'),
@@ -1540,6 +1635,57 @@
         // ---- Volume --------------------------------------------------------------
         // The knob is a mute toggle. Starting muted is what lets the TV switch itself
         // on without the browser blocking autoplay; one click turns the sound on.
+        // ---- Power ---------------------------------------------------------------
+        // The set is off until the viewer switches it on, every visit. Not
+        // remembered on purpose: switching it on is the interaction that lets the
+        // browser start audio, so making it automatic would only bring back the
+        // muted-first-video problem it exists to solve.
+        var powered = false;
+
+        function playCrt(animation) {
+            var crt = el.crt;
+            crt.classList.remove('firing', 'collapsing');
+            void crt.offsetWidth;           // restart the animation
+            crt.classList.add(animation);
+        }
+
+        function powerOn() {
+            if (powered) return;
+            powered = true;
+            el.power.classList.add('on');
+            el.power.setAttribute('aria-pressed', 'true');
+            el.powerValue.textContent = 'On';
+            el.screenOff.classList.add('hidden');
+            playCrt('firing');
+
+            // This runs inside a click, so the browser will allow sound. Apply the
+            // viewer's actual preference rather than starting muted and hoping.
+            applyMute(!wantsSound);
+            setTimeout(function () {
+                tuneTo(startingChannelIndex());
+            }, 260);
+        }
+
+        function powerOff() {
+            if (!powered) return;
+            powered = false;
+            el.power.classList.remove('on');
+            el.power.setAttribute('aria-pressed', 'false');
+            el.powerValue.textContent = 'Off';
+
+            captureProgress();              // don't lose the place in a film
+            stopProgressTracking();
+            disarmWatchdog();
+            expectingPlayback = false;
+            if (player && playerReady) { try { player.stopVideo(); } catch (e) {} }
+            hideCard();
+            hidePsa();
+            playCrt('collapsing');
+            setTimeout(function () {
+                el.screenOff.classList.remove('hidden');
+            }, 380);
+        }
+
         function applyMute(isMuted) {
             muted = isMuted;
             el.volumeValue.textContent = muted ? 'Muted' : 'On';
@@ -1557,27 +1703,6 @@
             applyMute(next);
         }
 
-        // If the browser won't start an unmuted video, start a muted one rather than
-        // showing the viewer a dead screen. The preference is untouched -- this is
-        // our compromise, not their decision -- and it's taken back below.
-        function rescueAutoplay() {
-            if (!player || !playerReady || muted) return;
-            var state;
-            try { state = player.getPlayerState(); } catch (e) { return; }
-            if (state === YT.PlayerState.PLAYING) return;
-            autoMuted = true;
-            applyMute(true);
-            try { player.playVideo(); } catch (e) {}
-        }
-
-        // Any gesture at all counts as the interaction browsers are waiting for, so
-        // the sound comes back on the viewer's first click without them having to
-        // know why it was off.
-        function reclaimSound() {
-            if (!autoMuted || !wantsSound) return;
-            autoMuted = false;
-            applyMute(false);
-        }
 
         // ---- YouTube IFrame API --------------------------------------------------
         // The plain <iframe> embed gives us no error signal — a dead video just shows
@@ -1597,9 +1722,6 @@
                     onReady: function () {
                         playerReady = true;
                         applyMute(!wantsSound);
-                        // Give the browser a moment to accept or refuse unmuted
-                        // playback before deciding whether to fall back.
-                        setTimeout(rescueAutoplay, 2200);
                         if (pendingVideo) {
                             expectingPlayback = true;
                             player.loadVideoById({
@@ -1676,8 +1798,9 @@
         }
 
         // ---- Wire up -------------------------------------------------------------
-        ['pointerdown', 'keydown'].forEach(function (evt) {
-            document.addEventListener(evt, reclaimSound, { once: true });
+
+        el.power.addEventListener('click', function () {
+            if (powered) powerOff(); else powerOn();
         });
 
         el.channelKnob.addEventListener('click', function () { tuneTo(channelIndex + 1); });
@@ -1722,7 +1845,8 @@
         loadResume();
         loadPlaylist()
             .then(function () {
-                tuneTo(startingChannelIndex());
+                // The player is prepared now so that switching on is instant, but
+                // nothing is tuned until the viewer reaches for the switch.
                 injectApi();
             })
             .catch(function (err) {
