@@ -468,16 +468,32 @@
             padding: 0;
             border: 0;
             cursor: pointer;
-            background: linear-gradient(180deg, #4b525a 0%, #2b3036 45%, #14181c 100%);
+            background: linear-gradient(180deg, #59616a 0%, #33383f 42%, #171b1f 100%);
             clip-path: polygon(
                 33% 0, 67% 0, 100% 33%, 100% 67%,
                 67% 100%, 33% 100%, 0 67%, 0 33%);
             position: relative;
-            box-shadow: inset 0 calc(var(--px) * -1) 0 rgba(0, 0, 0, .55);
-            transition: filter .12s steps(2);
+            box-shadow:
+                inset 0 var(--px) 0 rgba(255, 255, 255, .14),
+                inset 0 calc(var(--px) * -1) 0 rgba(0, 0, 0, .7),
+                0 var(--px) 0 rgba(0, 0, 0, .55),
+                0 calc(var(--px) * 2) 0 rgba(0, 0, 0, .32),
+                0 calc(var(--px) * 3) 0 rgba(0, 0, 0, .16);
+            transform: translateY(0);
+            transition: transform .1s steps(2), box-shadow .1s steps(2), filter .12s steps(2);
         }
-        .power:hover { filter: brightness(1.25); }
-        .power:active { filter: brightness(.8); }
+        .power:hover { filter: brightness(1.22); }
+
+        /* Switched on, the button stays pushed in -- the state is the position,
+           which is why it needs no label under it. */
+        .power:active,
+        .power.on {
+            transform: translateY(calc(var(--px) * 1.5));
+            box-shadow:
+                inset 0 var(--px) 0 rgba(255, 255, 255, .08),
+                inset 0 calc(var(--px) * -1) 0 rgba(0, 0, 0, .7),
+                0 calc(var(--px) * .5) 0 rgba(0, 0, 0, .5);
+        }
 
         /* The lamp: dead when off, lit when on. */
         .power::after {
@@ -550,21 +566,38 @@
 
         /* Square-ish knob with the corners knocked off -- a circle as a sprite
            would draw one. The stepped clip does the rounding. */
+        /* The controls stand proud of the cabinet. Depth comes from stacked hard
+           shadows rather than a blur: a lit top edge, a dark underside, and a
+           slab of shadow cast onto the wood below. Pressing one sinks it into
+           its own shadow, which is the whole illusion. */
         .knob {
             width: calc(var(--px) * 11);
             height: calc(var(--px) * 11);
             background:
-                linear-gradient(180deg, #4b525a 0%, #2b3036 45%, #14181c 100%);
+                linear-gradient(180deg, #59616a 0%, #33383f 42%, #171b1f 100%);
             clip-path: polygon(
                 33% 0, 67% 0, 100% 33%, 100% 67%,
                 67% 100%, 33% 100%, 0 67%, 0 33%);
             position: relative;
             cursor: pointer;
-            box-shadow: inset 0 calc(var(--px) * -1) 0 rgba(0, 0, 0, .55);
-            transition: filter .12s steps(2);
+            box-shadow:
+                inset 0 var(--px) 0 rgba(255, 255, 255, .14),
+                inset 0 calc(var(--px) * -1) 0 rgba(0, 0, 0, .7),
+                0 var(--px) 0 rgba(0, 0, 0, .55),
+                0 calc(var(--px) * 2) 0 rgba(0, 0, 0, .32),
+                0 calc(var(--px) * 3) 0 rgba(0, 0, 0, .16);
+            transform: translateY(0);
+            transition: transform .1s steps(2), box-shadow .1s steps(2), filter .12s steps(2);
         }
-        .knob:hover { filter: brightness(1.25); }
-        .knob:active { filter: brightness(.8); }
+        .knob:hover { filter: brightness(1.22); }
+        .knob:active {
+            filter: brightness(.85);
+            transform: translateY(calc(var(--px) * 1.5));
+            box-shadow:
+                inset 0 var(--px) 0 rgba(255, 255, 255, .08),
+                inset 0 calc(var(--px) * -1) 0 rgba(0, 0, 0, .7),
+                0 calc(var(--px) * .5) 0 rgba(0, 0, 0, .5);
+        }
 
         /* Pointer, rotated in fixed steps so it clicks between positions rather
            than gliding. */
@@ -600,12 +633,18 @@
             text-align: center;
         }
 
+        /* The controls report their state by where they point, the way a real set
+           does, so none of these are shown. They stay in the markup and keep
+           announcing, because a knob's angle means nothing to a screen reader. */
         .knob-value {
-            font-size: 9px;
-            color: var(--brass);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            min-height: 12px;
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip-path: inset(50%);
+            white-space: nowrap;
         }
 
         /* The channel's name is kept out of the picture -- turning the dial and
@@ -693,13 +732,13 @@
                     <div class="knob-group">
                         <button class="power" id="powerBtn" aria-pressed="false" aria-label="Power"></button>
                         <div class="knob-label">Power</div>
-                        <div class="knob-value" id="powerValue">Off</div>
+                        <div class="knob-value" id="powerValue" aria-live="polite">Off</div>
                     </div>
 
                     <div class="knob-group">
                         <div class="knob" id="volumeKnob"></div>
                         <div class="knob-label">Vol</div>
-                        <div class="knob-value" id="volumeValue">Muted</div>
+                        <div class="knob-value" id="volumeValue" aria-live="polite">Medium</div>
                     </div>
 
                     <div class="knob-group">
@@ -873,23 +912,39 @@
         // Playback only ever begins from the power switch, which is a click, so the
         // browser's gesture requirement is satisfied and the first video can start
         // out loud -- no muted-then-unmute compromise needed.
+        // Three positions rather than a continuous dial, because a knob that
+        // snaps between off, half and full is what a set of this age would have
+        // had -- and because there is no room on screen for a slider that reads
+        // as anything but a modern control.
         var MUTE_KEY = 'thiagotv.muted.v1';
-        var wantsSound = true;    // the viewer's preference
-        var autoMuted = false;    // muted by us to get playback going, not by them
+        var VOLUME_STEPS = [
+            { label: 'Muted',  volume: 0,   angle: -104 },
+            { label: 'Medium', volume: 45,  angle: 0 },
+            { label: 'Loud',   volume: 100, angle: 104 }
+        ];
+        var volumeStep = 1;   // middle by default: audible without being a shock
 
         function loadMutePreference() {
             var store = storage();
             if (!store) return;
             try {
                 var saved = store.getItem(MUTE_KEY);
-                if (saved !== null) wantsSound = saved !== 'muted';
+                if (saved === null) return;
+                // Earlier versions stored a two-state preference. Carry it across
+                // rather than silently resetting someone's setting.
+                if (saved === 'muted') volumeStep = 0;
+                else if (saved === 'sound') volumeStep = 1;
+                else {
+                    var n = parseInt(saved, 10);
+                    if (n >= 0 && n < VOLUME_STEPS.length) volumeStep = n;
+                }
             } catch (e) {}
         }
 
         function rememberMutePreference() {
             var store = storage();
             if (!store) return;
-            try { store.setItem(MUTE_KEY, wantsSound ? 'sound' : 'muted'); } catch (e) {}
+            try { store.setItem(MUTE_KEY, String(volumeStep)); } catch (e) {}
         }
 
         function rememberChannel(id) {
@@ -1660,7 +1715,7 @@
 
             // This runs inside a click, so the browser will allow sound. Apply the
             // viewer's actual preference rather than starting muted and hoping.
-            applyMute(!wantsSound);
+            applyVolume();
             setTimeout(function () {
                 tuneTo(startingChannelIndex());
             }, 260);
@@ -1686,21 +1741,26 @@
             }, 380);
         }
 
-        function applyMute(isMuted) {
-            muted = isMuted;
-            el.volumeValue.textContent = muted ? 'Muted' : 'On';
-            el.volumeKnob.style.setProperty('--knob-angle', muted ? '0deg' : '120deg');
+        function applyVolume() {
+            var step = VOLUME_STEPS[volumeStep];
+            muted = step.volume === 0;
+            el.volumeValue.textContent = step.label;
+            el.volumeKnob.style.setProperty('--knob-angle', step.angle + 'deg');
             if (player && playerReady) {
-                if (muted) player.mute(); else { player.unMute(); player.setVolume(80); }
+                if (muted) {
+                    player.mute();
+                } else {
+                    player.unMute();
+                    player.setVolume(step.volume);
+                }
             }
         }
 
         // Turning the knob is a deliberate choice, so it's the one that gets saved.
-        function setMuted(next) {
-            wantsSound = !next;
-            autoMuted = false;
+        function nudgeVolume() {
+            volumeStep = (volumeStep + 1) % VOLUME_STEPS.length;
             rememberMutePreference();
-            applyMute(next);
+            applyVolume();
         }
 
 
@@ -1721,7 +1781,7 @@
                 events: {
                     onReady: function () {
                         playerReady = true;
-                        applyMute(!wantsSound);
+                        applyVolume();
                         if (pendingVideo) {
                             expectingPlayback = true;
                             player.loadVideoById({
@@ -1804,12 +1864,12 @@
         });
 
         el.channelKnob.addEventListener('click', function () { tuneTo(channelIndex + 1); });
-        el.volumeKnob.addEventListener('click', function () { setMuted(!muted); });
+        el.volumeKnob.addEventListener('click', nudgeVolume);
 
         document.addEventListener('keydown', function (e) {
             if (e.key === 'ArrowRight' || e.key === 'ArrowUp') tuneTo(channelIndex + 1);
             else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') tuneTo(channelIndex - 1);
-            else if (e.key.toLowerCase() === 'm') setMuted(!muted);
+            else if (e.key.toLowerCase() === 'm') nudgeVolume();
         });
 
         el.forget.addEventListener('click', function (e) {
