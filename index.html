@@ -884,7 +884,17 @@
       <!-- Points at whatever is on screen, on its own line above the rest.
            Hidden until there is something to point at, so it never offers a
            dead link while the set is off. -->
-      <p class="stage-now hidden"><a href="#" id="nowLink">About this programme</a></p>
+      <p class="stage-now hidden">
+        <a href="#" id="nowLink">About this programme</a>
+        <!-- Casting is a browser-level function and no web API lets a page
+             start it: screen and tab mirroring live in Chrome's own menu, and
+             the Presentation API only reaches a Chromecast through a registered
+             receiver app, with no mobile browser support at all. So rather than
+             a button that would do nothing on a phone, this hands the programme
+             to YouTube, whose app casts natively. -->
+        <a href="#" id="castLink" rel="noopener"
+           title="Opens in the YouTube app, which can cast. To send this whole television to a TV, use your browser's own Cast or screen-mirroring control.">Watch on YouTube</a>
+      </p>
       <a href="guide.html">Programme guide</a>
       <p class="stage-note"><a href="#" id="forgetLink">Reset viewing history</a></p>
     </nav>
@@ -1327,6 +1337,7 @@
             forget: document.getElementById('forgetLink'),
             nowLink: document.getElementById('nowLink'),
             nowRow: document.querySelector('.stage-now'),
+            castLink: document.getElementById('castLink'),
             power: document.getElementById('powerBtn'),
             powerValue: document.getElementById('powerValue'),
             screenOff: document.getElementById('screenOff'),
@@ -1684,6 +1695,8 @@
             }
             el.info.textContent = label;
             el.nowLink.href = 'v/' + video.videoId + '.html';
+            el.castLink.href = 'https://www.youtube.com/watch?v=' + video.videoId;
+            el.castLink.target = '_blank';
             el.nowRow.classList.remove('hidden');
 
             hideCard();
