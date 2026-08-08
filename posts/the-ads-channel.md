@@ -18,13 +18,11 @@ Teleshopping is worth taking seriously as a form. It is the only television that
 
 The Brazilian context matters too. This is the decade after the Plano Real, when inflation stopped eating money between the shop and the till and consumer credit reached households that had never had it. Selling a hundred-real gadget in twelve instalments over the phone only makes sense in an economy where twelve months from now is a meaningful concept. These tapes are a record of that shift as much as of the products.
 
-## A hundred and one volumes of the eighties
+## The reels that were here
 
-The second hoard is bigger and blunter: [[dnq08Krap6g]] through [[-iA96rnH2tk]], a series of compilation reels of American commercials from the 1980s, numbered up to a hundred and one, including [[KyiTMLBc1EA]].
+For a while this channel also held something bigger and blunter: a series of compilation tapes of American commercials from the 1980s, numbered past a hundred. They were not curated, which was their whole value — a curated reel gives you the famous ads, the ones that won prizes and turn up in documentaries. These gave you whatever happened to be on the tape: the local dealership next to the national soft drink, the public service announcement, the station ident, the trailer for a film nobody remembers. Less a highlight reel than a core sample.
 
-These are not curated. That is their value. A curated reel of eighties advertising would give you the famous ones — the ones that won awards, the ones that get shown in documentaries about advertising. These give you everything that happened to be on the tape: the local car dealership next to the national soft drink, the public service announcement, the station ident, the trailer for a film nobody remembers. Watched in order, they are less a highlight reel than a core sample.
-
-What comes through is the texture rather than the content. The specific grain of tape that has been copied a few times. The way an eighties ad is mixed louder than the programme around it. The fact that every single one of them is trying to make you feel a very slightly different emotion in under thirty seconds, and that watching two hundred in a row makes all of those emotions cancel out into something closer to weather.
+They have since been retired from the station, because they were an hour long each and this channel works better as short things. Something shorter will take their place. The observation they supported is worth keeping anyway: what comes through in that kind of footage is texture rather than content — the grain of tape copied a few times, the way an eighties ad is mixed louder than the programme around it, the fact that each one is trying to produce a slightly different feeling in under thirty seconds, and that watching two hundred in a row makes all of those feelings cancel out into something closer to weather.
 
 ## Two outliers
 
