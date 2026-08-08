@@ -216,7 +216,13 @@ def cmd_add(args):
         "tags": split_tags(args.tags),
         "addedAt": args.date or dt.date.today().isoformat(),
     }
-    data["playlist"].append(entry)
+    # Newest goes to the front, not the back. The Latest channel breaks ties on
+    # the airdate by file order, and several videos usually share today's date --
+    # so appending meant a video added minutes ago could sit behind one added
+    # this morning, or behind anything that had been bumped. `bump` already put
+    # entries at the front; `add` has to agree with it or "newest" means two
+    # different things depending on which command you used.
+    data["playlist"].insert(0, entry)
     save(data)
     print(f"Added: {entry['title']}")
     print(f"  id   {entry['videoId']}")
