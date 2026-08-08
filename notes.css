@@ -21,6 +21,20 @@ body {
   font-size: 11px; letter-spacing: 4px; text-transform: uppercase;
   color: #7a6444; margin: 0 0 8px;
 }
+/* The way back to the television, at the top and hard to miss. Someone who
+   arrives here from a search should be able to see where they are and get to
+   the thing itself in one move -- that link is the point of the page. */
+.home { margin: 0 0 22px; }
+.home a {
+  display: inline-block;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 20px; font-weight: 700; letter-spacing: .01em;
+  color: #8a2f1d; text-decoration: none;
+  padding: 8px 16px;
+  border: 2px solid #8a2f1d;
+  border-radius: 2px;
+}
+.home a:hover { background: #8a2f1d; color: #efe4cd; }
 h1 {
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 28px; line-height: 1.25; margin: 0;

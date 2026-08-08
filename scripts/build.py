@@ -124,6 +124,20 @@ body {
   font-size: 11px; letter-spacing: 4px; text-transform: uppercase;
   color: #7a6444; margin: 0 0 8px;
 }
+/* The way back to the television, at the top and hard to miss. Someone who
+   arrives here from a search should be able to see where they are and get to
+   the thing itself in one move -- that link is the point of the page. */
+.home { margin: 0 0 22px; }
+.home a {
+  display: inline-block;
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 20px; font-weight: 700; letter-spacing: .01em;
+  color: #8a2f1d; text-decoration: none;
+  padding: 8px 16px;
+  border: 2px solid #8a2f1d;
+  border-radius: 2px;
+}
+.home a:hover { background: #8a2f1d; color: #efe4cd; }
 h1 {
   font-family: Georgia, 'Times New Roman', serif;
   font-size: 28px; line-height: 1.25; margin: 0;
@@ -306,6 +320,7 @@ def video_page(video, base_url, station):
         meta_bits.append("Aired " + esc(video["addedAt"]))
 
     home = f"{base_url}/" if base_url else "../index.html"
+    guide = f"{base_url}/guide.html" if base_url else "../guide.html"
 
     return f"""<!DOCTYPE html>
 <html lang="en">
@@ -328,6 +343,7 @@ def video_page(video, base_url, station):
 </head>
 <body>
 <main class="sheet">
+<p class="home"><a href="{esc(home)}">&larr; ThiagoTV</a></p>
 <div class="player">
 <iframe src="https://www.youtube-nocookie.com/embed/{esc(vid)}"
         title="{esc(title)}"
@@ -342,8 +358,7 @@ def video_page(video, base_url, station):
 <hr class="rule">
 {chr(10).join(body_parts)}
 <footer class="foot">
-<p><a href="{esc(home)}">← Back to ThiagoTV</a></p>
-<p><a href="https://www.youtube.com/watch?v={esc(vid)}" rel="noopener">Watch on YouTube</a></p>
+<p><a href="{esc(guide)}">Programme guide</a></p>
 </footer>
 </main>
 </body>
@@ -411,6 +426,7 @@ def channel_page(tag, videos, base_url, station):
 </head>
 <body>
 <main class="sheet">
+<p class="home"><a href="{esc(home)}">&larr; ThiagoTV</a></p>
 <p class="eyebrow">Channel</p>
 <h1>{esc(tag.title())}</h1>
 <p class="meta">{len(videos)} programmes · {described} with notes</p>
@@ -419,7 +435,6 @@ def channel_page(tag, videos, base_url, station):
 {chr(10).join(items)}
 </ul>
 <footer class="foot">
-<p><a href="{esc(home)}">← Back to ThiagoTV</a></p>
 <p><a href="{esc(guide)}">Programme guide</a></p>
 </footer>
 </main>
@@ -522,6 +537,7 @@ def guide_page(videos, base_url, station):
 </head>
 <body>
 <main class="sheet">
+<p class="home"><a href="{esc(home)}">&larr; ThiagoTV</a></p>
 <p class="eyebrow">{esc(station.get('title', 'ThiagoTV'))}</p>
 <h1>Programme guide</h1>
 <p class="meta">{len(videos)} programmes on file · {len(dates)} broadcast {"day" if len(dates) == 1 else "days"}</p>
@@ -534,7 +550,6 @@ def guide_page(videos, base_url, station):
 {chr(10).join(items)}
 </ul>
 <footer class="foot">
-<p><a href="{esc(home)}">← Back to ThiagoTV</a></p>
 <p id="watchedSummary"></p>
 </footer>
 </main>
