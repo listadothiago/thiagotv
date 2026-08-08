@@ -1120,12 +1120,6 @@
         ];
         var volumeStep = 1;   // middle by default: audible without being a shock
 
-        // The knob sweeps rather than cycles: it climbs to the top, then turns back
-        // down through the middle to mute, then climbs again. A wrap-around would
-        // jump from full volume straight to silence, which is not how a physical
-        // knob behaves and is a nasty surprise when it happens by accident.
-        var volumeDirection = 1;
-
         function loadMutePreference() {
             var store = storage();
             if (!store) return;
@@ -1171,7 +1165,12 @@
         }
 
         var RESUME_KEY = 'thiagotv.resume.v1';
-        var MAX_RESUMES = 6;
+        // Going forward, a video gets exactly one second chance: come back to it
+        // once and it picks up where you left it, come back again and the channel
+        // moves on. Going *backwards* through the dial ignores this entirely --
+        // see tuneBack(), where returning is a return, not a re-encounter.
+        var MAX_RESUMES = 1;
+        var forceResume = false;
         var RESUME_MIN_SECONDS = 30;   // below this, just start it again
         var RESUME_END_MARGIN = 90;    // this close to the end counts as finished
         var PROGRESS_MS = 5000;
@@ -1712,6 +1711,7 @@
 
         function dropBurnedOut() {
             if (!current || !current.resume) return;
+            if (forceResume) return;   // deliberately retracing; nothing is retired
             // Bounded by the queue length: if every remaining video is burned out,
             // stop rather than spin.
             var guard = current.queue.length;
@@ -1746,10 +1746,12 @@
             // Work out whether this is a pick-up-where-you-left-off.
             var startAt = 0;
             var record = resumePoints[video.videoId];
-            if (current.resume && record &&
-                record.n < MAX_RESUMES && record.t > RESUME_MIN_SECONDS) {
+            if (record && record.t > RESUME_MIN_SECONDS &&
+                (forceResume || (current.resume && record.n < MAX_RESUMES))) {
                 startAt = record.t;
             }
+            var wasForced = forceResume;
+            forceResume = false;
 
             var label = video.title || video.videoId;
             if (startAt) {
@@ -1764,11 +1766,11 @@
             hideCard();
             hidePsa();
 
-            if (startAt) {
-                // Spending a resume happens on the attempt, not on finishing: the
-                // count is there to stop an unfinished film following the viewer
-                // around, and stalling at the same point six times still means
-                // they're not watching it.
+            if (startAt && !wasForced) {
+                // Spending a chance happens on the attempt, not on finishing:
+                // the count exists to stop an unfinished video following the
+                // viewer around, and stalling at the same point again still
+                // means they aren't watching it.
                 record.n += 1;
                 saveResume();
                 if (record.n >= MAX_RESUMES) {
@@ -1851,6 +1853,72 @@
         // so coming back lands on the next one instead of replaying what you already
         // sat through -- the channel behaves as though it kept broadcasting while you
         // were elsewhere.
+        // Where the viewer came from, so anticlockwise can actually retrace it.
+        // The dial order alone isn't enough: turning back should return you to the
+        // channel you were on before, at the video you were on, at the second you
+        // left it -- which is a different question from "what is one position
+        // anticlockwise on the dial".
+        var channelHistory = [];
+
+        function tuneForward() {
+            if (current && powered) {
+                captureProgress();
+                var v = current.queue.length ? current.queue[current.index] : null;
+                channelHistory.push({
+                    channelIndex: channelIndex,
+                    queueIndex: current.index,
+                    videoId: v ? v.videoId : null
+                });
+                if (channelHistory.length > 40) channelHistory.shift();
+            }
+            tuneTo(channelIndex + 1);
+        }
+
+        function tuneBack() {
+            // Nothing to retrace: fall back to simply turning the dial the other
+            // way, which is what a viewer expects a knob to do.
+            if (!channelHistory.length) { tuneTo(channelIndex - 1); return; }
+
+            var back = channelHistory.pop();
+            captureProgress();
+            disarmWatchdog();
+            stopProgressTracking();
+            // Deliberately no advanceCursor here. Going back is a return, and
+            // burning the video you are returning to would defeat the point.
+
+            channelIndex = back.channelIndex;
+            var ch = CHANNELS[channelIndex];
+            current = stateFor(ch);
+            current.offAir = false;
+
+            // Find the video again by id rather than by position: the running
+            // order can have lost entries to dead videos since you left.
+            var pos = -1;
+            for (var i = 0; i < current.queue.length; i++) {
+                if (current.queue[i].videoId === back.videoId) { pos = i; break; }
+            }
+            if (pos === -1) pos = Math.min(back.queueIndex, Math.max(0, current.queue.length - 1));
+            current.index = pos;
+
+            forceResume = true;   // pick it up exactly, whatever the attempt count says
+
+            el.channelValue.textContent = ch.label;
+            rememberChannel(ch.id);
+            el.channelKnob.style.setProperty(
+                '--knob-angle',
+                (channelIndex * (300 / CHANNELS.length)) + 'deg'
+            );
+            showCard({ mode: 'snow', title: 'Tuning', holding: false });
+            setTimeout(playCurrent, 400);
+        }
+
+        // Which half of a control was clicked. A knob you can only turn one way
+        // is a button pretending to be a knob.
+        function clickDirection(event, node) {
+            var r = node.getBoundingClientRect();
+            return (event.clientX - r.left) < r.width / 2 ? -1 : 1;
+        }
+
         function tuneTo(index) {
             disarmWatchdog();
             captureProgress();          // before anything else moves
@@ -1987,13 +2055,38 @@
         }
 
         // Turning the knob is a deliberate choice, so it's the one that gets saved.
-        function nudgeVolume() {
-            var next = volumeStep + volumeDirection;
-            if (next < 0 || next >= VOLUME_STEPS.length) {
-                volumeDirection = -volumeDirection;   // hit the stop, turn back
-                next = volumeStep + volumeDirection;
-            }
+        // With both halves clickable there is no need to bounce off the ends any
+        // more: left turns it down, right turns it up, and it stops at the stops
+        // exactly as a real one would.
+        var volumeUndo = [];      // recent positions, so a double-click can unwind
+        var lastAudibleStep = 1;  // what to return to when unmuting
+
+        function stepVolume(dir) {
+            volumeUndo.push(volumeStep);
+            if (volumeUndo.length > 4) volumeUndo.shift();
+            var next = Math.max(0, Math.min(VOLUME_STEPS.length - 1, volumeStep + dir));
             volumeStep = next;
+            if (volumeStep > 0) lastAudibleStep = volumeStep;
+            rememberMutePreference();
+            applyVolume();
+        }
+
+        // A double-click mutes and unmutes. The two single clicks have already
+        // fired by the time this runs -- delaying them to find out would make
+        // every ordinary click feel sluggish -- so it rewinds them first, then
+        // does the thing that was actually asked for.
+        function toggleMute() {
+            var before = volumeUndo.length >= 2
+                ? volumeUndo[volumeUndo.length - 2]
+                : volumeStep;
+            volumeUndo.length = Math.max(0, volumeUndo.length - 2);
+
+            if (before === 0) {
+                volumeStep = lastAudibleStep || 1;
+            } else {
+                lastAudibleStep = before;
+                volumeStep = 0;
+            }
             rememberMutePreference();
             applyVolume();
         }
@@ -2136,13 +2229,24 @@
             if (powered) powerOff(); else powerOn();
         });
 
-        el.channelKnob.addEventListener('click', function () { tuneTo(channelIndex + 1); });
-        el.volumeKnob.addEventListener('click', nudgeVolume);
+        el.channelKnob.addEventListener('click', function (e) {
+            if (clickDirection(e, el.channelKnob) > 0) tuneForward(); else tuneBack();
+        });
+
+        el.volumeKnob.addEventListener('click', function (e) {
+            stepVolume(clickDirection(e, el.volumeKnob));
+        });
+        el.volumeKnob.addEventListener('dblclick', function (e) {
+            e.preventDefault();
+            toggleMute();
+        });
 
         document.addEventListener('keydown', function (e) {
-            if (e.key === 'ArrowRight' || e.key === 'ArrowUp') tuneTo(channelIndex + 1);
-            else if (e.key === 'ArrowLeft' || e.key === 'ArrowDown') tuneTo(channelIndex - 1);
-            else if (e.key.toLowerCase() === 'm') nudgeVolume();
+            if (e.key === 'ArrowRight') tuneForward();
+            else if (e.key === 'ArrowLeft') tuneBack();
+            else if (e.key === 'ArrowUp') stepVolume(1);
+            else if (e.key === 'ArrowDown') stepVolume(-1);
+            else if (e.key.toLowerCase() === 'm') toggleMute();
         });
 
         el.forget.addEventListener('click', function (e) {
