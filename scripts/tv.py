@@ -229,12 +229,15 @@ def cmd_list(args):
     items = data["playlist"]
     if args.tag:
         items = [v for v in items if args.tag.lower() in [t.lower() for t in v.get("tags", [])]]
+    if args.missing_notes:
+        items = [v for v in items if not (v.get("dossier") or {})]
     if not items:
         print("(nothing matches)")
         return
     for entry in sorted(items, key=lambda v: v.get("addedAt", ""), reverse=True):
         tags = ", ".join(entry.get("tags", [])) or "-"
-        print(f"{entry.get('addedAt', '?'):<12} {entry.get('title', '?'):<45} [{tags}]")
+        mark = " " if (entry.get("dossier") or {}) else "·"
+        print(f"{mark} {entry.get('videoId','?'):<12} {entry.get('title', '?'):<52} [{tags}]")
 
 
 def cmd_tag(args):
@@ -434,6 +437,8 @@ def main():
 
     p = sub.add_parser("list", help="show the playlist")
     p.add_argument("--tag", help="only show videos with this tag")
+    p.add_argument("--missing-notes", action="store_true",
+                   help="only the ones with no programme notes written yet")
     p.set_defaults(func=cmd_list)
 
     p = sub.add_parser("tag", help="change a video's channel tags")
