@@ -726,7 +726,7 @@
             background: var(--brass);
             transform-origin: 50% calc(var(--px) * 4.5);
             transform: translateX(-50%) rotate(var(--knob-angle, 0deg));
-            transition: transform .25s steps(6);
+            transition: transform .32s cubic-bezier(.34, .8, .3, 1);
         }
 
         /* Hub cap. */
@@ -1101,6 +1101,12 @@
             { label: 'Loud',   volume: 100, angle: 104 }
         ];
         var volumeStep = 1;   // middle by default: audible without being a shock
+
+        // The knob sweeps rather than cycles: it climbs to the top, then turns back
+        // down through the middle to mute, then climbs again. A wrap-around would
+        // jump from full volume straight to silence, which is not how a physical
+        // knob behaves and is a nasty surprise when it happens by accident.
+        var volumeDirection = 1;
 
         function loadMutePreference() {
             var store = storage();
@@ -1928,24 +1934,48 @@
             }, 380);
         }
 
+        // Ramping rather than jumping: a hard cut between silence and full volume
+        // is startling, and the knob is visibly sweeping, so the sound should too.
+        var volumeRamp = null;
+
+        function rampVolumeTo(target) {
+            if (!player || !playerReady) return;
+            clearInterval(volumeRamp);
+            var from;
+            try { from = player.isMuted() ? 0 : player.getVolume(); } catch (e) { from = 0; }
+            if (target > 0) { try { player.unMute(); } catch (e) {} }
+
+            var steps = 12, i = 0;
+            volumeRamp = setInterval(function () {
+                i++;
+                var v = Math.round(from + (target - from) * (i / steps));
+                try { player.setVolume(v); } catch (e) {}
+                if (i >= steps) {
+                    clearInterval(volumeRamp);
+                    volumeRamp = null;
+                    // Mute only once the fade has finished, so it isn't audible
+                    // as a cut partway down.
+                    if (target === 0) { try { player.mute(); } catch (e) {} }
+                }
+            }, 20);
+        }
+
         function applyVolume() {
             var step = VOLUME_STEPS[volumeStep];
             muted = step.volume === 0;
             el.volumeValue.textContent = step.label;
             el.volumeKnob.style.setProperty('--knob-angle', step.angle + 'deg');
-            if (player && playerReady) {
-                if (muted) {
-                    player.mute();
-                } else {
-                    player.unMute();
-                    player.setVolume(step.volume);
-                }
-            }
+            rampVolumeTo(step.volume);
         }
 
         // Turning the knob is a deliberate choice, so it's the one that gets saved.
         function nudgeVolume() {
-            volumeStep = (volumeStep + 1) % VOLUME_STEPS.length;
+            var next = volumeStep + volumeDirection;
+            if (next < 0 || next >= VOLUME_STEPS.length) {
+                volumeDirection = -volumeDirection;   // hit the stop, turn back
+                next = volumeStep + volumeDirection;
+            }
+            volumeStep = next;
             rememberMutePreference();
             applyVolume();
         }
