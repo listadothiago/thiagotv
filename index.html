@@ -1860,6 +1860,26 @@
         // anticlockwise on the dial".
         var channelHistory = [];
 
+        // The pointer's rotation is cumulative rather than derived from which
+        // channel is showing. Deriving it from the index looks wrong the moment
+        // the dial wraps or the viewer retraces their steps: the shortest path
+        // between two angles is often the opposite of the way they just turned
+        // it, so the pointer would visibly spin backwards while the channel went
+        // forwards. Counting turns instead means it always moves the way it was
+        // pushed, by exactly one notch.
+        var KNOB_STEP = 300 / CHANNELS.length;
+        var knobRotation = 0;
+
+        function turnKnob(direction) {
+            knobRotation += direction * KNOB_STEP;
+            el.channelKnob.style.setProperty('--knob-angle', knobRotation + 'deg');
+        }
+
+        function placeKnob(index) {
+            knobRotation = index * KNOB_STEP;
+            el.channelKnob.style.setProperty('--knob-angle', knobRotation + 'deg');
+        }
+
         function tuneForward() {
             if (current && powered) {
                 captureProgress();
@@ -1871,13 +1891,13 @@
                 });
                 if (channelHistory.length > 40) channelHistory.shift();
             }
-            tuneTo(channelIndex + 1);
+            tuneTo(channelIndex + 1, 1);
         }
 
         function tuneBack() {
             // Nothing to retrace: fall back to simply turning the dial the other
             // way, which is what a viewer expects a knob to do.
-            if (!channelHistory.length) { tuneTo(channelIndex - 1); return; }
+            if (!channelHistory.length) { tuneTo(channelIndex - 1, -1); return; }
 
             var back = channelHistory.pop();
             captureProgress();
@@ -1904,10 +1924,7 @@
 
             el.channelValue.textContent = ch.label;
             rememberChannel(ch.id);
-            el.channelKnob.style.setProperty(
-                '--knob-angle',
-                (channelIndex * (300 / CHANNELS.length)) + 'deg'
-            );
+            turnKnob(-1);
             showCard({ mode: 'snow', title: 'Tuning', holding: false });
             setTimeout(playCurrent, 400);
         }
@@ -1919,7 +1936,7 @@
             return (event.clientX - r.left) < r.width / 2 ? -1 : 1;
         }
 
-        function tuneTo(index) {
+        function tuneTo(index, spin) {
             disarmWatchdog();
             captureProgress();          // before anything else moves
             stopProgressTracking();
@@ -1934,10 +1951,7 @@
 
             el.channelValue.textContent = ch.label;
             rememberChannel(ch.id);
-            el.channelKnob.style.setProperty(
-                '--knob-angle',
-                (channelIndex * (300 / CHANNELS.length)) + 'deg'
-            );
+            if (spin) turnKnob(spin); else placeKnob(channelIndex);
 
             // A beat of snow between channels: the gap is what sells the dial.
             //
