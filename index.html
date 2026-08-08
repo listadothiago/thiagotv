@@ -42,7 +42,7 @@
             font-family: 'Courier New', monospace;
             /* Generous air top and bottom: the set should sit in the room with the
                background visible around it, not fill the window. */
-            padding: 8vh 20px 7vh;
+            padding: 5vh 20px 5vh;
         }
 
         /* ---- The room ---------------------------------------------------------
@@ -163,7 +163,7 @@
             gap: 16px;
             /* Smaller than the window on purpose. The set should read as an object
                standing in a room, which only works if there is room around it. */
-            max-width: 720px;
+            max-width: 840px;
             margin: 0 auto;
         }
 
@@ -1037,19 +1037,23 @@
             { id: 'latest',   label: 'Latest',   tag: null,        order: 'newest', repeat: false },
             // The one channel that carries no video: a text bulletin that expires
             // on its own. See renderPsa().
-            { id: 'psa',      label: 'Bulletin', kind: 'text' },
             { id: 'music',    label: 'Music',    tag: 'music',     order: 'shuffle' },
             // Long-form. `resume: true` makes the channel pick a film up where the
             // viewer left it -- see the resume block below for why that runs out.
             { id: 'films',    label: 'Films',    tag: 'films',     order: 'shuffle', resume: true },
             // Also long-form, so it picks up where the viewer left off.
             { id: 'history',  label: 'History',  tag: 'history',   order: 'shuffle', resume: true },
+            // Long-form futurism and space essays, so it picks up where you left off.
+            { id: 'science',  label: 'Science',  tag: 'science',   order: 'shuffle', resume: true },
             { id: 'nature',   label: 'Nature',   tag: 'nature',    order: 'shuffle' },
             { id: 'cartoon',  label: 'Cartoon',  tag: 'cartoon',   order: 'shuffle', resume: true },
             { id: 'ads',      label: 'Infomercials', tag: 'ads',   order: 'shuffle' },
             { id: 'drag',     label: 'Drag',     tag: 'drag',      order: 'shuffle' },
             { id: 'comedy',   label: 'Comedy',   tag: 'comedy',    order: 'shuffle' },
-            { id: 'vignette', label: 'Vignette', tag: 'vignette',  order: 'shuffle' }
+            { id: 'vignette', label: 'Vignette', tag: 'vignette',  order: 'shuffle' },
+            // Last on the dial. It is a notice board, not a channel you should
+            // trip over on your way from Latest to anything else.
+            { id: 'psa',      label: 'Bulletin', kind: 'text' }
         ];
 
         var library = [];        // everything from playlist.json
@@ -1511,24 +1515,16 @@
             var allowRepeats = ch.repeat !== false;
             var running = allowRepeats ? fresh.concat(repeats) : fresh;
 
-            // The front page leads with the newest thing, full stop -- whether or
-            // not this viewer has already seen it. Posting or bumping a video is a
-            // statement that it should be the first thing on screen, and a channel
-            // that quietly skipped it because you watched it yesterday would make
-            // that statement impossible to keep. Everything after it is still
-            // ordered by what you haven't seen.
-            if (ch.order === 'newest' && items.length) {
-                var newest = items.slice().sort(function (a, b) {
-                    return String(b.addedAt || '').localeCompare(String(a.addedAt || ''));
-                })[0];
-                running = [newest].concat(running.filter(function (v) {
-                    return v.videoId !== newest.videoId;
-                }));
-            }
+            // Latest leads with the newest thing this viewer has *not* seen.
+            // An earlier version forced the newest video to the front whether or
+            // not it had been watched, which made "skip what I've already seen"
+            // impossible to honour on the one channel where it matters most.
+            // Newest-first ordering already lives in `fresh`, so there is nothing
+            // more to do here: posting or bumping still puts a video at the head
+            // of the queue for everyone who hasn't watched it.
 
             channels[ch.id] = {
                 queue: running,
-                leadIsNewest: ch.order === 'newest' && items.length > 0,
                 index: 0,
                 seen: 0,
                 offAir: false,
@@ -1795,7 +1791,6 @@
                 // The newest programme leads this channel whether or not it has
                 // been seen -- that is the front page's promise and it outranks
                 // this one. It is always at index 0 of a freshly built queue.
-                if (current.index === 0 && current.leadIsNewest) return;
                 if (!wasSeen(video.videoId)) return;
                 current.queue.splice(current.index, 1);
                 if (!current.queue.length) break;
@@ -2038,7 +2033,18 @@
             return ((raw % 360) + 360) % 360;
         }
 
+        var coarsePointer = window.matchMedia &&
+            window.matchMedia('(pointer: coarse)').matches;
+
         function clickDirection(event, node) {
+            // A finger on a knob a couple of centimetres wide cannot aim precisely
+            // enough for the angle to mean anything -- the same tap reads as
+            // forward or backward depending on a few pixels. Touch gets the plain
+            // answer: left half back, right half forward.
+            if (coarsePointer) {
+                var box = node.getBoundingClientRect();
+                return (event.clientX - box.left) < box.width / 2 ? -1 : 1;
+            }
             var delta = angleOfClick(event, node) - markerAngle(node);
             delta = ((delta % 360) + 360) % 360;      // 0..360, clockwise from marker
             if (delta === 0) return 1;
