@@ -1013,12 +1013,6 @@
         <a href="#" id="nowLink">About this programme</a>
       </p>
       <a href="guide.html">Programme guide</a>
-      <!-- Only ever shown when the browser has told us the set can be installed
-           and hasn't been. There is no reliable way to ask "is this already
-           installed?", so the question is answered the other way round: the
-           beforeinstallprompt event only fires when installing is genuinely on
-           offer, and running as an installed app suppresses it. -->
-      <a href="#" id="installLink" class="hidden">Install this television</a>
       <p class="stage-note"><a href="#" id="forgetLink">Reset viewing history</a></p>
     </nav>
   </div>
@@ -1440,7 +1434,6 @@
             forget: document.getElementById('forgetLink'),
             fullscreen: document.getElementById('fullscreenBtn'),
             screenInner: document.querySelector('.screen-inner'),
-            install: document.getElementById('installLink'),
             nowLink: document.getElementById('nowLink'),
             nowRow: document.querySelector('.stage-now'),
             power: document.getElementById('powerBtn'),
@@ -1535,6 +1528,7 @@
 
             channels[ch.id] = {
                 queue: running,
+                leadIsNewest: ch.order === 'newest' && items.length > 0,
                 index: 0,
                 seen: 0,
                 offAir: false,
@@ -1784,11 +1778,38 @@
             }
         }
 
+        // On a channel that never repeats, anything already watched has no business
+        // being on screen -- including something watched thirty seconds ago, after
+        // the running order was built. Without this, marking a video as seen only
+        // took effect the next time the queue was rebuilt, so Latest would sit on
+        // a video you had just finished with until it ran out on its own.
+        //
+        // Only for `repeat: false` channels. Everywhere else, seen videos are
+        // deliberately still in the rotation, sorted to the back.
+        function dropAlreadySeen() {
+            if (!current || current.allowRepeats) return;
+            if (forceResume) return;   // deliberately retracing: leave it alone
+            var guard = current.queue.length;
+            while (guard-- > 0 && current.queue.length) {
+                var video = current.queue[current.index];
+                // The newest programme leads this channel whether or not it has
+                // been seen -- that is the front page's promise and it outranks
+                // this one. It is always at index 0 of a freshly built queue.
+                if (current.index === 0 && current.leadIsNewest) return;
+                if (!wasSeen(video.videoId)) return;
+                current.queue.splice(current.index, 1);
+                if (!current.queue.length) break;
+                if (current.index >= current.queue.length) current.index = 0;
+            }
+            if (!current.queue.length) current.caughtUp = true;
+        }
+
         function playCurrent() {
             if (!current) { showEmptyChannel(); return; }
             if (current.kind === 'text') { renderPsa(); return; }
 
             dropBurnedOut();
+            dropAlreadySeen();
 
             if (!current.queue.length) {
                 // Everything this channel carried has either been watched or given
@@ -2496,36 +2517,6 @@
 
         // ---- Wire up -------------------------------------------------------------
 
-        // ---- Install ------------------------------------------------------------
-        // The browser decides whether installing is possible and tells us by firing
-        // this event; we hold on to it so the offer can be made in our own words,
-        // in the place it belongs, rather than through a browser banner. The link
-        // stays hidden until then, so it is never shown to someone who already has
-        // the app or to a browser that can't install it.
-        var installPrompt = null;
-
-        window.addEventListener('beforeinstallprompt', function (e) {
-            e.preventDefault();
-            installPrompt = e;
-            el.install.classList.remove('hidden');
-        });
-
-        el.install.addEventListener('click', function (e) {
-            e.preventDefault();
-            if (!installPrompt) return;
-            installPrompt.prompt();
-            installPrompt.userChoice.then(function () {
-                // Whatever they chose, the prompt is spent and cannot be reused.
-                installPrompt = null;
-                el.install.classList.add('hidden');
-            });
-        });
-
-        // Installed and launched as an app: the offer would be nonsense.
-        window.addEventListener('appinstalled', function () {
-            installPrompt = null;
-            el.install.classList.add('hidden');
-        });
 
         // ---- Fullscreen ---------------------------------------------------------
         // The browser only grants this from a gesture, which is why it is a button
