@@ -40,6 +40,8 @@ SECTIONS = [
     ("controversy", "Controversy"),
 ]
 
+ANALYTICS = '''<script defer src="/_vercel/insights/script.js"></script>'''
+
 MONTH_NAMES = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December",
@@ -340,6 +342,7 @@ def video_page(video, base_url, station):
 <script type="application/ld+json">
 {json.dumps(ld, indent=2, ensure_ascii=False)}
 </script>
+{ANALYTICS}
 </head>
 <body>
 <main class="sheet">
@@ -423,6 +426,7 @@ def channel_page(tag, videos, base_url, station):
 <script type="application/ld+json">
 {json.dumps(ld, indent=2, ensure_ascii=False)}
 </script>
+{ANALYTICS}
 </head>
 <body>
 <main class="sheet">
@@ -534,6 +538,7 @@ def guide_page(videos, base_url, station):
 <script type="application/ld+json">
 {json.dumps(ld, indent=2, ensure_ascii=False)}
 </script>
+{ANALYTICS}
 </head>
 <body>
 <main class="sheet">

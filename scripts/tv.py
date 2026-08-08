@@ -12,6 +12,7 @@ Usage:
     tv.py tag <url-or-id> --add-tags vignette    # append tags
     tv.py rm <url-or-id>
     tv.py date <url-or-id> <YYYY-MM-DD>          # change schedule position
+    tv.py bump <url-or-id>                       # repost to the front of Latest
 
     tv.py psa set "text"  [--hours N]            # post to the PSA channel
     tv.py psa show                               # what's on air, and for how long
@@ -373,6 +374,38 @@ def cmd_psa_clear(args):
     print(f'Pulled: "{psa["text"]}"')
 
 
+def cmd_bump(args):
+    """Put a video back at the front of the Latest channel.
+
+    Two things have to happen together. The date decides the running order, so
+    it moves to today; but several videos can share a date, and among those the
+    file order decides, so the entry also moves to the front of the list. Doing
+    only the first would put it *among* today's videos rather than at the head
+    of them.
+
+    This is a repost, not a correction: the video keeps its tags and its notes,
+    and anyone who has already watched it still has it marked as watched.
+    """
+    video_id = extract_id(args.target)
+    data = load()
+    entry = find(data, video_id)
+    if not entry:
+        raise SystemExit(f"{video_id} is not in the playlist.")
+
+    when = args.date or dt.date.today().isoformat()
+    try:
+        dt.date.fromisoformat(when)
+    except ValueError:
+        raise SystemExit(f"{when!r} is not a YYYY-MM-DD date.")
+
+    was = entry.get("addedAt", "?")
+    entry["addedAt"] = when
+    data["playlist"] = [entry] + [v for v in data["playlist"] if v["videoId"] != video_id]
+    save(data)
+    print(f"Bumped to the front of Latest: {entry['title']}")
+    print(f"  aired {was} -> {when}")
+
+
 def cmd_date(args):
     video_id = extract_id(args.target)
     try:
@@ -417,6 +450,11 @@ def main():
     p.add_argument("target")
     p.add_argument("date")
     p.set_defaults(func=cmd_date)
+
+    p = sub.add_parser("bump", help="repost a video to the front of the Latest channel")
+    p.add_argument("target", help="YouTube URL or 11-character video id")
+    p.add_argument("--date", help="air it on this date instead of today (YYYY-MM-DD)")
+    p.set_defaults(func=cmd_bump)
 
     p = sub.add_parser("channels", help="the dial: channels, tags and how full each is")
     p.set_defaults(func=cmd_channels)

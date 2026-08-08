@@ -42,6 +42,7 @@ python3 scripts/tv.py tag <url-or-id> --tags music,film      # replace
 python3 scripts/tv.py tag <url-or-id> --add-tags vignette    # append
 python3 scripts/tv.py rm <url-or-id>
 python3 scripts/tv.py date <url-or-id> <YYYY-MM-DD>
+python3 scripts/tv.py bump <url-or-id>                    # repost to the front of Latest
 ```
 
 `add` accepts any YouTube link shape (watch, youtu.be, shorts, embed) or a bare
@@ -131,6 +132,24 @@ Two flags are worth setting deliberately when adding a channel:
 
 **Adding several at once** is fine — loop the `add` command. Report them as a
 short list at the end rather than narrating each one.
+
+## Reposting
+
+`bump` puts a video back at the head of the Latest channel, dated today. Use it
+when the user says to bump, repost, re-air, bring back or feature something —
+an old programme worth surfacing again, or one that deserves a second airing
+after a batch import buried it.
+
+It is a repost, not a correction: tags and notes are untouched, and anyone who
+already watched it still has it marked as watched, so it will not be forced on
+them a second time.
+
+Two things have to happen together for it to actually land on top, and `bump`
+does both: the date moves to today, *and* the entry moves to the front of the
+file. Dates alone are not enough, because several videos usually share today's
+date and the file order decides between them — setting only the date puts a
+video *among* today's, not at the head of them. Don't reach for `date` when the
+user means "put this first".
 
 ## Programme notes
 
