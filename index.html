@@ -1092,26 +1092,6 @@
             return Object.prototype.hasOwnProperty.call(seenAtLoad, videoId);
         }
 
-        // ---- Resume points -------------------------------------------------------
-        // Where the viewer got to in a long film. Dropping someone back at 00:00 of a
-        // ninety-minute picture is the one place the "just keep broadcasting" model
-        // falls down, so channels marked `resume: true` remember the position.
-        //
-        // It runs out deliberately. Someone who has dipped into the same film six
-        // times and never finished it isn't going to; past that the film stops being
-        // offered as unfinished business and is treated as watched, so the channel
-        // moves on to something else. Without a cap, one abandoned film would greet
-        // that viewer forever.
-        // Which channel the set was left on. A television doesn't reset to channel
-        // one every time it's switched on, and on a phone -- where the app is
-        // relaunched constantly -- being dropped back on Latest every time would
-        // undo the whole point of having a dial.
-        var CHANNEL_KEY = 'thiagotv.channel.v1';
-
-        // Sound is on unless the viewer turned it off, and the choice is remembered.
-        // Playback only ever begins from the power switch, which is a click, so the
-        // browser's gesture requirement is satisfied and the first video can start
-        // out loud -- no muted-then-unmute compromise needed.
         // Three positions rather than a continuous dial, because a knob that
         // snaps between off, half and full is what a set of this age would have
         // had -- and because there is no room on screen for a slider that reads
@@ -1147,26 +1127,17 @@
             try { store.setItem(MUTE_KEY, String(volumeStep)); } catch (e) {}
         }
 
-        function rememberChannel(id) {
-            var store = storage();
-            if (!store) return;
-            try { store.setItem(CHANNEL_KEY, id); } catch (e) {}
-        }
+        // ---- Resume points -------------------------------------------------------
+        // Where the viewer got to in a long film. Dropping someone back at 00:00 of a
+        // ninety-minute picture is the one place the "just keep broadcasting" model
+        // falls down, so channels marked `resume: true` remember the position.
+        //
+        // It runs out deliberately. Someone who has dipped into the same film six
+        // times and never finished it isn't going to; past that the film stops being
+        // offered as unfinished business and is treated as watched, so the channel
+        // moves on to something else. Without a cap, one abandoned film would greet
+        // that viewer forever.
 
-        // First visit lands on Latest. After that the set comes back where it was,
-        // unless that channel no longer exists -- a lineup can change under a
-        // returning viewer, and a missing channel shouldn't leave a blank screen.
-        function startingChannelIndex() {
-            var store = storage();
-            if (!store) return 0;
-            var saved;
-            try { saved = store.getItem(CHANNEL_KEY); } catch (e) { return 0; }
-            if (!saved) return 0;
-            for (var i = 0; i < CHANNELS.length; i++) {
-                if (CHANNELS[i].id === saved) return i;
-            }
-            return 0;
-        }
 
         var RESUME_KEY = 'thiagotv.resume.v1';
         // Going forward, a video gets exactly one second chance: come back to it
@@ -1331,7 +1302,6 @@
                 try {
                     store.removeItem(SEEN_KEY);
                     store.removeItem(RESUME_KEY);
-                    store.removeItem(CHANNEL_KEY);
                 } catch (e) {}
             }
             channels = Object.create(null);   // rebuild every running order
@@ -1927,7 +1897,6 @@
             forceResume = true;   // pick it up exactly, whatever the attempt count says
 
             el.channelValue.textContent = ch.label;
-            rememberChannel(ch.id);
             turnKnob(-1);
             showCard({ mode: 'snow', title: 'Tuning', holding: false });
             setTimeout(playCurrent, 400);
@@ -1954,7 +1923,6 @@
             if (current.offAir) signBackOn(ch, current);
 
             el.channelValue.textContent = ch.label;
-            rememberChannel(ch.id);
             if (spin) turnKnob(spin); else placeKnob(channelIndex);
 
             // A beat of snow between channels: the gap is what sells the dial.
@@ -2012,8 +1980,14 @@
             // This runs inside a click, so the browser will allow sound. Apply the
             // viewer's actual preference rather than starting muted and hoping.
             applyVolume();
+            // Switching on always lands on Latest. Resuming the channel you last
+            // watched is remembering a session that already ended; switching on
+            // starts a new one, and the first thing a new session should show is
+            // what's new. Within a session the dial still remembers where you
+            // were -- that is what the channel history is for.
+            channelHistory = [];
             setTimeout(function () {
-                tuneTo(startingChannelIndex());
+                tuneTo(0);
             }, 260);
         }
 
