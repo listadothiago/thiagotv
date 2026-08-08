@@ -141,3 +141,68 @@ their own.
 - [x] Sitemap + robots naming LLM crawlers
 - [x] Video embedded on each programme page
 - [x] Skill now writes deep notes by default on every add
+
+---
+
+# Ranking de oportunidade — onde escrever primeiro
+
+Guesstimate honesto: sem ferramenta de keyword, isto é julgamento, não dado. Mas
+o critério importa mais que a precisão, e o critério é **demanda ÷ concorrência**,
+não demanda pura. Um site novo não vence Wikipedia, IMDb ou Genius em nada. Ele
+vence onde quase ninguém escreveu.
+
+## Alta oportunidade
+
+**1. Lip syncs do Drag Race — 100 páginas sem artigo**
+A melhor razão do catálogo. As buscas são hiper-específicas ("Geneva Karr
+Hershii lip sync", "Sam Star Kennedy Davenport Rihanna"), o público é fervoroso
+e busca constantemente, e quase ninguém escreve texto sobre um lip sync
+individual — os wikis de fandom são finos nisso. Cada página é um evento
+datável, com duas pessoas nomeadas e uma música nomeada. É o tipo de long tail
+que um site pequeno consegue dominar.
+Custo: alto por página (exige pesquisa real de quem são e onde estavam na
+competição), mas o artigo do Geneva Karr provou que rende 600 palavras boas.
+
+**2. Fall of Civilizations — 25 páginas, todas sem artigo**
+Cada episódio é um assunto histórico distinto e realmente buscado. A
+concorrência no assunto em si é Wikipedia, mas o long tail ("Fall of
+Civilizations Bronze Age Collapse", "Songhai Empire documentary") é vencível, e
+o público dessa série procura companhia em texto. Documentários longos também
+casam com o canal History, que retoma de onde parou.
+
+**3. Filmes obscuros e de domínio público — 11 sem artigo**
+Cyborg 2087, The Day Time Ended, The Bat, Crossworlds, The 13th Floor. A
+intenção de busca aqui é *assistir*, e nossa página tem o vídeo embutido mais
+contexto. Poucos escrevem sobre eles. Paris Is Burning e The Times of Harvey
+Milk são exceções de alta demanda **e** alta concorrência — valem pelo prestígio
+do conteúdo, não pelo tráfego.
+Bloqueio: de vários eu não sei os fatos. Precisa de pesquisa ou do Thiago.
+
+**4. Comerciais brasileiros — 129, um artigo de canal, não 129 artigos**
+"Grupo Imagem Teleshop", "Facas Ginsu 2000", "comercial anos 80" têm demanda
+nostálgica real e concorrência quase nula. Mas individualmente são finos demais
+para sustentar uma página cada. O certo é **um artigo forte na página do canal
+Ads** sobre o arquivo, mais talvez cinco comerciais icônicos com página própria.
+
+## Baixa oportunidade — não vale o esforço agora
+
+- **Videoclipes famosos** (Deee-Lite, Janelle Monáe, Busta Rhymes, Britpop
+  canônico): Wikipedia, Genius e os canais oficiais dominam. Perdemos.
+- **Honest Trailers / Pitch Meetings**: Screen Junkies e ScreenRant são donos
+  desses termos.
+- **Clipes de SNL**: a NBC é dona.
+- **Episódios de Jem** (65): demanda moderada, mas fandom e Hasbro competem, e
+  65 páginas quase idênticas correm risco de parecer conteúdo gerado.
+
+## Recomendação: os 5 primeiros
+
+Escolhidos por razão demanda/concorrência, não por fama:
+
+1. Um lip sync do Drag Race de temporada recente e muito comentado
+2. Fall of Civilizations — Bronze Age Collapse (o episódio mais buscado da série)
+3. Fall of Civilizations — The Mayans
+4. Carnival of Souls (feito) → próximo: Cyborg 2087 ou The Day Time Ended
+5. Artigo de canal para Ads (exige o recurso de artigo por canal, ainda não feito)
+
+Reavaliar depois de 4–6 semanas com dados reais do Search Console. Aí para de
+ser chute: dá para ver o que já recebe impressões e escrever mais daquilo.
