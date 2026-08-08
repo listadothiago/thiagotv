@@ -1171,7 +1171,7 @@
         // see tuneBack(), where returning is a return, not a re-encounter.
         var MAX_RESUMES = 1;
         var forceResume = false;
-        var RESUME_MIN_SECONDS = 30;   // below this, just start it again
+        var RESUME_MIN_SECONDS = 5;    // below this there is nothing worth returning to
         var RESUME_END_MARGIN = 90;    // this close to the end counts as finished
         var PROGRESS_MS = 5000;
 
@@ -1259,7 +1259,7 @@
         // of a film whenever someone turns the dial or shuts the tab -- exactly the
         // two moments a resume point matters most.
         function captureProgress() {
-            if (!current || !current.resume || !current.queue.length) return;
+            if (!current || !current.queue.length) return;
             if (!player || !playerReady || !expectingPlayback) return;
             var video = current.queue[current.index];
             var t, d;
@@ -2170,7 +2170,7 @@
                             current && current.queue.length) {
                             var playing = current.queue[current.index];
                             markSeen(playing.videoId);
-                            if (current.resume) startProgressTracking(playing.videoId);
+                            startProgressTracking(playing.videoId);
                         }
                         // Nudge a cued video into playing. Muted playback is normally
                         // allowed; if it still won't start, the viewer can hit play.
