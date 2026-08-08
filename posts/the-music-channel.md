@@ -36,9 +36,9 @@ Imported in a batch, these behave like a batch — a scene arriving as a scene, 
 
 Some of these carry a fight with them.
 
-[[rog8ou-ZepE]] took a bassline without clearing it, defended the theft with reasoning nobody believed, and settled. [[9EcjWd-O4jI]] put one woman on the sleeve and another woman's voice on the record. [[L0TvnWRSyr4]] won an award and got the ceremony interrupted by someone who thought he should have won it instead.
+[[9EcjWd-O4jI]] put one woman on the sleeve and another woman's voice on the record — the face the label wanted and the voice it actually used, treated as separable things. [[L0TvnWRSyr4]] won an award and had the ceremony interrupted by someone who felt he should have won it instead, an episode now remembered far more clearly than the category.
 
-Filed together, they say something about how much of pop history is litigation, credit disputes and public argument rather than music. The songs are the part that survives; the fights are usually why anyone remembers the details.
+Filed together, they say something about how much of pop history is credit disputes and public argument rather than music. The songs are the part that survives; the arguments are usually why anyone remembers the details.
 
 ## The old stuff that does not sound old
 
