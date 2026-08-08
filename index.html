@@ -1448,9 +1448,25 @@
             }
 
             var allowRepeats = ch.repeat !== false;
+            var running = allowRepeats ? fresh.concat(repeats) : fresh;
+
+            // The front page leads with the newest thing, full stop -- whether or
+            // not this viewer has already seen it. Posting or bumping a video is a
+            // statement that it should be the first thing on screen, and a channel
+            // that quietly skipped it because you watched it yesterday would make
+            // that statement impossible to keep. Everything after it is still
+            // ordered by what you haven't seen.
+            if (ch.order === 'newest' && items.length) {
+                var newest = items.slice().sort(function (a, b) {
+                    return String(b.addedAt || '').localeCompare(String(a.addedAt || ''));
+                })[0];
+                running = [newest].concat(running.filter(function (v) {
+                    return v.videoId !== newest.videoId;
+                }));
+            }
 
             channels[ch.id] = {
-                queue: allowRepeats ? fresh.concat(repeats) : fresh,
+                queue: running,
                 index: 0,
                 seen: 0,
                 offAir: false,
@@ -1985,7 +2001,15 @@
             // starts a new one, and the first thing a new session should show is
             // what's new. Within a session the dial still remembers where you
             // were -- that is what the channel history is for.
+            // Switching on starts a session, so the dial is rebuilt with it: every
+            // channel gets a fresh running order, shuffles are reshuffled, and any
+            // channel that had signed off is back on air. Without this, the state
+            // left behind by the previous session survives the set being off --
+            // which is how Latest could greet you with "all caught up" the moment
+            // you switched on, instead of the newest programme.
             channelHistory = [];
+            channels = Object.create(null);
+            current = null;
             setTimeout(function () {
                 tuneTo(0);
             }, 260);
