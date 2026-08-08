@@ -1052,7 +1052,7 @@
             { id: 'history',  label: 'History',  tag: 'history',   order: 'shuffle', resume: true },
             { id: 'nature',   label: 'Nature',   tag: 'nature',    order: 'shuffle' },
             { id: 'cartoon',  label: 'Cartoon',  tag: 'cartoon',   order: 'shuffle', resume: true },
-            { id: 'ads',      label: 'Ads',      tag: 'ads',       order: 'shuffle' },
+            { id: 'ads',      label: 'Infomercials', tag: 'ads',   order: 'shuffle' },
             { id: 'drag',     label: 'Drag',     tag: 'drag',      order: 'shuffle' },
             { id: 'comedy',   label: 'Comedy',   tag: 'comedy',    order: 'shuffle' },
             { id: 'vignette', label: 'Vignette', tag: 'vignette',  order: 'shuffle' }
@@ -1876,6 +1876,13 @@
 
         function markDeadAndSkip(videoId) {
             disarmWatchdog();
+            // A break that won't play is simply skipped; it isn't part of any
+            // channel's running order, so there is nothing to remove it from.
+            if (inBreak && videoId === currentBreakId) {
+                deadVideos[videoId] = true;
+                endBreak();
+                return;
+            }
             if (!current) return;
 
             var queue = current.queue;
@@ -1987,15 +1994,41 @@
             setTimeout(playCurrent, 400);
         }
 
-        // Which half of a control was clicked. A knob you can only turn one way
-        // is a button pretending to be a knob.
-        function clickDirection(event, node) {
+        // Which way the viewer just turned the knob.
+        //
+        // Not left half versus right half -- that is a pair of buttons wearing a
+        // knob's clothes, and it ignores where the pointer actually is. This asks
+        // the only question that matters on a real dial: is the place you grabbed
+        // ahead of the marker, or behind it? Clicking just clockwise of the
+        // pointer turns it forward; clicking behind it turns it back. Which means
+        // the same spot on the knob does opposite things depending on where the
+        // marker currently sits, exactly as your hand would expect.
+        function angleOfClick(event, node) {
             var r = node.getBoundingClientRect();
-            return (event.clientX - r.left) < r.width / 2 ? -1 : 1;
+            var dx = event.clientX - (r.left + r.width / 2);
+            var dy = event.clientY - (r.top + r.height / 2);
+            // Screen y grows downward, and the marker's zero points straight up,
+            // so measure clockwise from twelve o'clock.
+            return (Math.atan2(dx, -dy) * 180 / Math.PI + 360) % 360;
+        }
+
+        function markerAngle(node) {
+            var raw = parseFloat(node.style.getPropertyValue('--knob-angle')) || 0;
+            return ((raw % 360) + 360) % 360;
+        }
+
+        function clickDirection(event, node) {
+            var delta = angleOfClick(event, node) - markerAngle(node);
+            delta = ((delta % 360) + 360) % 360;      // 0..360, clockwise from marker
+            if (delta === 0) return 1;
+            // Anything within half a turn clockwise of the marker reads as
+            // forward; the rest of the circle is behind it.
+            return delta < 180 ? 1 : -1;
         }
 
         function tuneTo(index, spin) {
             disarmWatchdog();
+            inBreak = false; currentBreakId = null; breakReturn = null;
             captureProgress();          // before anything else moves
             stopProgressTracking();
             if (current) advanceCursor();
@@ -2039,6 +2072,161 @@
         // ---- Volume --------------------------------------------------------------
         // The knob is a mute toggle. Starting muted is what lets the TV switch itself
         // on without the browser blocking autoplay; one click turns the sound on.
+        // ---- Interstitials -------------------------------------------------------
+        // Short things that play between programmes rather than on a channel of
+        // their own: the adverts and idents a station used to fill the seams with.
+        // They are not programmes, so they are not remembered as watched, do not
+        // appear in the guide as broadcasts, and never occupy a dial position.
+        //
+        // Length is checked when one loads rather than measured in advance.
+        // YouTube will not tell you a duration without either an API key or
+        // scraping every watch page, and scraping 141 of them in a row simply
+        // gets you rate-limited -- whereas the player already knows, the instant
+        // it has the video. Anything too long is dropped on the spot and
+        // remembered, so it is only ever tried once.
+        var INTERSTITIAL_TAGS = ['ads', 'vignette'];
+        var INTERSTITIAL_ODDS = 0.35;      // between one programme and the next
+        var INTERSTITIAL_MAX_SECONDS = 60;
+
+        var tooLong = Object.create(null);   // ids proven unsuitable this session
+        var inBreak = false;                 // a break is on screen right now
+        var breakReturn = null;              // what to play when it finishes
+
+        function interstitialPool() {
+            return library.filter(function (v) {
+                if (deadVideos[v.videoId] || tooLong[v.videoId]) return false;
+                var tags = v.tags || [];
+                for (var i = 0; i < INTERSTITIAL_TAGS.length; i++) {
+                    if (tags.indexOf(INTERSTITIAL_TAGS[i]) !== -1) return true;
+                }
+                return false;
+            });
+        }
+
+        function pickInterstitial() {
+            var pool = interstitialPool();
+            if (!pool.length) return null;
+            return pool[Math.floor(Math.random() * pool.length)];
+        }
+
+        // Called when a programme ends. Returns true if a break took the screen.
+        function maybeTakeABreak(resume) {
+            if (inBreak || !powered) return false;
+            if (Math.random() >= INTERSTITIAL_ODDS) return false;
+            var spot = pickInterstitial();
+            if (!spot) return false;
+
+            inBreak = true;
+            breakReturn = resume;
+            expectingPlayback = true;
+            stalls = 0;
+            hideCard();
+            hidePsa();
+            el.info.textContent = spot.title || spot.videoId;
+            el.nowRow.classList.add('hidden');   // a break is not a programme
+            try {
+                player.loadVideoById({ videoId: spot.videoId, startSeconds: 0 });
+            } catch (e) { endBreak(); return true; }
+            armWatchdog(spot.videoId, WATCHDOG_MS);
+            currentBreakId = spot.videoId;
+            return true;
+        }
+
+        var currentBreakId = null;
+
+        function endBreak() {
+            inBreak = false;
+            currentBreakId = null;
+            var next = breakReturn;
+            breakReturn = null;
+            if (typeof next === 'function') next(); else playCurrent();
+        }
+
+        // The moment the player knows how long the break is, judge it. A minute is
+        // the line: past that it stops being a seam and becomes the programme.
+        function checkBreakLength() {
+            if (!inBreak || !currentBreakId) return;
+            var d;
+            try { d = player.getDuration(); } catch (e) { return; }
+            if (!d) return;
+            if (d > INTERSTITIAL_MAX_SECONDS) {
+                console.warn('ThiagoTV: too long for a break (' + Math.round(d) + 's)', currentBreakId);
+                tooLong[currentBreakId] = true;
+                endBreak();
+            }
+        }
+
+        // ---- Sound of the set ----------------------------------------------------
+        // Synthesised rather than loaded: a handful of short noises are not worth
+        // an audio file each, and keeping them in code keeps the whole site two
+        // static documents. The context is created on the first gesture because
+        // browsers refuse to start audio before one -- the power switch is always
+        // that gesture, since nothing else can happen until the set is on.
+        //
+        // These are room noises, not programme audio, so they are deliberately
+        // not tied to the volume knob: muting a television silences the
+        // broadcast, not the clunk of its switches. They are quiet enough that
+        // the distinction never becomes annoying.
+        var audio = null;
+
+        function audioContext() {
+            if (audio) return audio;
+            var Ctx = window.AudioContext || window.webkitAudioContext;
+            if (!Ctx) return null;
+            try { audio = new Ctx(); } catch (e) { return null; }
+            return audio;
+        }
+
+        // A detent: a very short burst of filtered noise, which is what a plastic
+        // knob passing a notch actually sounds like.
+        function clickSound(pitch, level, length) {
+            var ctx = audioContext();
+            if (!ctx) return;
+            try {
+                var frames = Math.floor(ctx.sampleRate * length);
+                var buffer = ctx.createBuffer(1, frames, ctx.sampleRate);
+                var data = buffer.getChannelData(0);
+                for (var i = 0; i < frames; i++) {
+                    // Decaying noise: loud at the strike, gone almost at once.
+                    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / frames, 3);
+                }
+                var src = ctx.createBufferSource();
+                src.buffer = buffer;
+
+                var band = ctx.createBiquadFilter();
+                band.type = 'bandpass';
+                band.frequency.value = pitch;
+                band.Q.value = 1.1;
+
+                var gain = ctx.createGain();
+                gain.gain.value = level;
+
+                src.connect(band); band.connect(gain); gain.connect(ctx.destination);
+                src.start();
+            } catch (e) { /* sound is never worth an exception */ }
+        }
+
+        // The power switch is heavier and mechanical, so it gets a body to it.
+        function thunkSound(up) {
+            var ctx = audioContext();
+            if (!ctx) return;
+            try {
+                var osc = ctx.createOscillator();
+                var gain = ctx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(up ? 150 : 110, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(up ? 70 : 45, ctx.currentTime + 0.09);
+                gain.gain.setValueAtTime(0.09, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.13);
+                osc.connect(gain); gain.connect(ctx.destination);
+                osc.start(); osc.stop(ctx.currentTime + 0.14);
+            } catch (e) {}
+            clickSound(1800, 0.05, 0.02);
+        }
+
+        function knobClick()    { clickSound(2400, 0.055, 0.018); }
+        function volumeClick()  { clickSound(3100, 0.04,  0.014); }
+
         // ---- Power ---------------------------------------------------------------
         // The set is off until the viewer switches it on, every visit. Not
         // remembered on purpose: switching it on is the interaction that lets the
@@ -2086,6 +2274,7 @@
 
         function powerOff() {
             if (!powered) return;
+            inBreak = false; currentBreakId = null; breakReturn = null;
             el.nowRow.classList.add('hidden');
             powered = false;
             el.power.classList.remove('on');
@@ -2233,7 +2422,10 @@
                             hideCard();
                         }
 
-                        if (e.data === YT.PlayerState.PLAYING) stalls = 0;
+                        if (e.data === YT.PlayerState.PLAYING) {
+                            stalls = 0;
+                            if (inBreak) checkBreakLength();
+                        }
 
                         // A television has no pause, and the glass over the screen
                         // means a viewer cannot press play either -- so a player
@@ -2258,7 +2450,7 @@
                         // load would mean a video the viewer never saw -- because
                         // they tuned straight past it -- would never come round
                         // again.
-                        if (e.data === YT.PlayerState.PLAYING &&
+                        if (e.data === YT.PlayerState.PLAYING && !inBreak &&
                             current && current.queue.length) {
                             var playing = current.queue[current.index];
                             markSeen(playing.videoId);
@@ -2270,12 +2462,16 @@
                         if (e.data === YT.PlayerState.ENDED) {
                             disarmWatchdog();
                             stopProgressTracking();
+
+                            // A break finishing just hands the screen back.
+                            if (inBreak) { endBreak(); return; }
+
                             // Watched to the end, so there's nothing to come back to.
                             if (current && current.queue.length) {
                                 clearResume(current.queue[current.index].videoId);
                             }
                             advanceCursor();
-                            playCurrent();
+                            if (!maybeTakeABreak(playCurrent)) playCurrent();
                         }
                     },
                     onError: function (e) {
@@ -2370,14 +2566,17 @@
         });
 
         el.power.addEventListener('click', function () {
+            thunkSound(!powered);
             if (powered) powerOff(); else powerOn();
         });
 
         el.channelKnob.addEventListener('click', function (e) {
+            knobClick();
             if (clickDirection(e, el.channelKnob) > 0) tuneForward(); else tuneBack();
         });
 
         el.volumeKnob.addEventListener('click', function (e) {
+            volumeClick();
             stepVolume(clickDirection(e, el.volumeKnob));
         });
         el.volumeKnob.addEventListener('dblclick', function (e) {
