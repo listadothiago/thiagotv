@@ -294,6 +294,16 @@
             overflow: hidden;
         }
 
+        /* Sits above the player, below every screen card, so the cards and the
+           bulletin still cover it. Transparent, but it does catch the pointer --
+           that is the entire job. */
+        .screen-glass {
+            position: absolute;
+            inset: 0;
+            z-index: 1;
+            background: transparent;
+        }
+
         .scanlines::after {
             content: '';
             position: absolute;
@@ -866,6 +876,14 @@
             <div class="screen-bezel">
                 <div class="screen-inner scanlines">
                     <div id="player"></div>
+                    <!-- A pane of glass over the tube. The player's chrome lives
+                         inside a cross-origin iframe and cannot be restyled, but it
+                         only appears on hover — so the fix is to make sure the
+                         pointer never reaches it. The set has its own controls; a
+                         second, borrowed set of them floating over the picture was
+                         always the wrong object in the room. Seeking and the full
+                         player remain one click away on the programme page. -->
+                    <div class="screen-glass" id="screenGlass" aria-hidden="true"></div>
                     <div class="screen-card" id="screenCard" data-mode="snow">
                         <div class="card-layer layer-bars"></div>
                         <div class="card-layer layer-snow"><canvas id="snowCanvas"></canvas></div>
@@ -1993,7 +2011,14 @@
                     autoplay: 1,
                     rel: 0,
                     modestbranding: 1,
-                    playsinline: 1
+                    playsinline: 1,
+                    // Belt and braces with the glass above: even in the moments
+                    // the player's own furniture might surface, there is less of
+                    // it. controls stays on so the picture is never a dead
+                    // rectangle if the glass ever fails to load.
+                    iv_load_policy: 3,   // no annotation cards over the picture
+                    disablekb: 1,        // arrow keys belong to the dial, not the player
+                    fs: 0                // fullscreen is the browser's job here
                 },
                 events: {
                     onReady: function () {
