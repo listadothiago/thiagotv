@@ -31,6 +31,8 @@ ROOT = Path(__file__).resolve().parent.parent
 PLAYLIST = ROOT / "playlist.json"
 VIDEO_DIR = ROOT / "v"
 CHANNEL_DIR = ROOT / "c"
+POST_SRC = ROOT / "posts"
+POST_OUT = ROOT / "p"
 
 GENERATED = ["guide.html", "notes.css", "sitemap.xml", "robots.txt"]
 
@@ -41,6 +43,95 @@ SECTIONS = [
 ]
 
 ANALYTICS = '''<script defer src="/_vercel/insights/script.js"></script>'''
+
+def read_posts():
+    """Posts are markdown files in posts/, with a small frontmatter block.
+
+    Kept as files rather than as JSON strings because these are the one thing on
+    the site written at length, and long prose belongs somewhere you can actually
+    write it.
+    """
+    if not POST_SRC.exists():
+        return []
+    posts = []
+    for path in sorted(POST_SRC.glob("*.md")):
+        raw = path.read_text()
+        meta, _, body = raw.partition("\n---\n") if raw.startswith("---\n") else ("", "", raw)
+        fields = {}
+        for line in meta.lstrip("-\n").splitlines():
+            if ":" in line:
+                k, _, v = line.partition(":")
+                fields[k.strip().lower()] = v.strip()
+        posts.append({
+            "slug": path.stem,
+            "title": fields.get("title", path.stem),
+            "date": fields.get("date", ""),
+            "summary": fields.get("summary", ""),
+            "body": body.strip(),
+        })
+    posts.sort(key=lambda p: p["date"], reverse=True)
+    return posts
+
+
+def render_markdown(text, videos_by_id, prefix=""):
+    """A deliberately small markdown subset: headings, paragraphs, lists, links,
+    emphasis -- and [[videoId]], which expands to a link carrying the programme's
+    real title, so a post can never drift out of step with the schedule.
+
+    Everything is escaped first and marked up second, so nothing written in a
+    post can inject HTML.
+    """
+    mentioned = []
+    unresolved = []
+
+    def inline(t):
+        t = esc(t)
+        def video(m):
+            vid = m.group(1)
+            v = videos_by_id.get(vid)
+            if not v:
+                # Loud on purpose. An unresolved reference means someone wrote an
+                # id for a programme that isn't on the station -- which in
+                # practice means it was invented -- and it would otherwise ship
+                # as raw brackets in the middle of a paragraph.
+                unresolved.append(vid)
+                return ""
+            if vid not in mentioned:
+                mentioned.append(vid)
+            return f'<a href="{prefix}v/{esc(vid)}.html">{esc(v.get("title", vid))}</a>'
+        t = re.sub(r"\[\[([A-Za-z0-9_-]{11})\]\]", video, t)
+        t = re.sub(r"\[([^\]]+)\]\(([^)]+)\)", r'<a href="\2">\1</a>', t)
+        t = re.sub(r"\*\*([^*]+)\*\*", r"<strong>\1</strong>", t)
+        t = re.sub(r"(?<!\*)\*([^*]+)\*(?!\*)", r"<em>\1</em>", t)
+        return t
+
+    html_parts, bullets = [], []
+
+    def flush():
+        if bullets:
+            html_parts.append("<ul>" + "".join(f"<li>{b}</li>" for b in bullets) + "</ul>")
+            bullets.clear()
+
+    for block in re.split(r"\n\s*\n", text):
+        block = block.strip()
+        if not block:
+            continue
+        if block.startswith("## "):
+            flush()
+            html_parts.append(f"<h2>{inline(block[3:].strip())}</h2>")
+        elif all(line.lstrip().startswith("- ") for line in block.splitlines()):
+            for line in block.splitlines():
+                bullets.append(inline(line.lstrip()[2:]))
+            flush()
+        else:
+            flush()
+            html_parts.append(f"<p>{inline(block)}</p>")
+    flush()
+    if unresolved:
+        print(f"  WARNING: post references {len(unresolved)} unknown video id(s): "
+              f"{', '.join(unresolved)}", file=sys.stderr)
+    return "\n".join(html_parts), mentioned
+
 
 MONTH_NAMES = [
     "January", "February", "March", "April", "May", "June",
@@ -448,7 +539,71 @@ def channel_page(tag, videos, base_url, station):
 """
 
 
-def guide_page(videos, base_url, station):
+def post_page(post, videos_by_id, base_url, station):
+    canonical = f"{base_url}/p/{post['slug']}.html" if base_url else ""
+    home = f"{base_url}/" if base_url else "../index.html"
+    guide = f"{base_url}/guide.html" if base_url else "../guide.html"
+    body, mentioned = render_markdown(post["body"], videos_by_id, prefix="../")
+
+    listed = ""
+    if mentioned:
+        rows = "".join(
+            f'<li data-id="{esc(v)}"><a href="../v/{esc(v)}.html">'
+            f'{esc(videos_by_id[v].get("title", v))}</a></li>'
+            for v in mentioned
+        )
+        listed = ('<h2>Programmes mentioned</h2>'
+                  f'<ul class="programmes" id="programmes">{rows}</ul>')
+
+    ld = {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": post["title"],
+        **({"description": post["summary"]} if post["summary"] else {}),
+        **({"datePublished": post["date"]} if post["date"] else {}),
+        **({"url": canonical} if canonical else {}),
+        "isPartOf": {"@type": "CreativeWork", "name": station.get("title", "ThiagoTV"),
+                     **({"url": base_url} if base_url else {})},
+    }
+
+    return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{esc(post['title'])} — {esc(station.get('title', 'ThiagoTV'))}</title>
+<meta name="description" content="{esc(post['summary'] or post['title'])}">
+{f'<link rel="canonical" href="{esc(canonical)}">' if canonical else ''}
+<link rel="stylesheet" href="../notes.css">
+<meta property="og:type" content="article">
+<meta property="og:title" content="{esc(post['title'])}">
+<meta property="og:description" content="{esc(post['summary'] or post['title'])}">
+{f'<meta property="og:url" content="{esc(canonical)}">' if canonical else ''}
+<script type="application/ld+json">
+{json.dumps(ld, indent=2, ensure_ascii=False)}
+</script>
+{ANALYTICS}
+</head>
+<body>
+<main class="sheet">
+<p class="home"><a href="{esc(home)}">&larr; ThiagoTV</a></p>
+<p class="eyebrow">From the station</p>
+<h1>{esc(post['title'])}</h1>
+<p class="meta">{esc(post['date'])}</p>
+<hr class="rule">
+{body}
+{listed}
+<footer class="foot">
+<p><a href="{esc(guide)}">Programme guide</a></p>
+</footer>
+</main>
+{WATCHED_SCRIPT}
+</body>
+</html>
+"""
+
+
+def guide_page(videos, base_url, station, posts=()):
     canonical = f"{base_url}/guide.html" if base_url else ""
     home = f"{base_url}/" if base_url else "index.html"
 
@@ -485,6 +640,16 @@ def guide_page(videos, base_url, station):
             f'<div class="cal-month"><h3>{esc(label)}</h3>'
             f'<div class="cal-days">{"".join(days)}</div></div>'
         )
+
+    posts_block = ""
+    if posts:
+        rows = "".join(
+            f'<li><a href="p/{esc(p["slug"])}.html">{esc(p["title"])}</a>'
+            f'<span class="tags">{esc(p["date"])}{" · " + esc(p["summary"]) if p["summary"] else ""}</span></li>'
+            for p in posts
+        )
+        posts_block = ('<nav class="archive"><h2>Reading</h2>'
+                       f'<ul class="programmes">{rows}</ul></nav>')
 
     items = []
     for date in dates:
@@ -547,6 +712,7 @@ def guide_page(videos, base_url, station):
 <h1>Programme guide</h1>
 <p class="meta">{len(videos)} programmes on file · {len(dates)} broadcast {"day" if len(dates) == 1 else "days"}</p>
 <hr class="rule">
+{posts_block}
 <nav class="archive">
 <h2>Archive</h2>
 {chr(10).join(cal_blocks)}
@@ -564,10 +730,11 @@ def guide_page(videos, base_url, station):
 """
 
 
-def sitemap(videos, base_url, tags=()):
+def sitemap(videos, base_url, tags=(), posts=()):
     today = dt.date.today().isoformat()
     urls = [f"{base_url}/", f"{base_url}/guide.html"]
     urls += [f"{base_url}/c/{t}.html" for t in tags]
+    urls += [f"{base_url}/p/{p['slug']}.html" for p in posts]
     urls += [f"{base_url}/v/{v['videoId']}.html" for v in videos]
     entries = "\n".join(
         f"  <url><loc>{esc(u)}</loc><lastmod>{today}</lastmod></url>" for u in urls
@@ -620,7 +787,18 @@ def main():
         )
 
     (ROOT / "notes.css").write_text(STYLESHEET)
-    (ROOT / "guide.html").write_text(guide_page(videos, base_url, station))
+
+    posts = read_posts()
+    videos_by_id = {v["videoId"]: v for v in videos}
+    if POST_OUT.exists():
+        shutil.rmtree(POST_OUT)
+    POST_OUT.mkdir(parents=True)
+    for post in posts:
+        (POST_OUT / f"{post['slug']}.html").write_text(
+            post_page(post, videos_by_id, base_url, station)
+        )
+
+    (ROOT / "guide.html").write_text(guide_page(videos, base_url, station, posts))
 
     # One page per channel. Rebuilt from scratch so a tag that stops being used
     # doesn't leave an orphan page behind advertising programmes it no longer has.
@@ -635,7 +813,7 @@ def main():
         )
 
     if base_url:
-        (ROOT / "sitemap.xml").write_text(sitemap(videos, base_url, tags))
+        (ROOT / "sitemap.xml").write_text(sitemap(videos, base_url, tags, posts))
         (ROOT / "robots.txt").write_text(robots(base_url))
     else:
         # Without a real origin these two files would advertise wrong URLs, which
@@ -645,7 +823,7 @@ def main():
 
     with_notes = sum(1 for v in videos if (v.get("dossier") or {}))
     print(f"Built {len(videos)} programme pages ({with_notes} with notes), "
-          f"{len(tags)} channel pages, guide.html")
+          f"{len(tags)} channel pages, {len(posts)} posts, guide.html")
     if base_url:
         print(f"       sitemap.xml and robots.txt for {base_url}")
     else:

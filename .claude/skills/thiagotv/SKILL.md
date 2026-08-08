@@ -151,6 +151,68 @@ date and the file order decides between them — setting only the date puts a
 video *among* today's, not at the head of them. Don't reach for `date` when the
 user means "put this first".
 
+## Posts
+
+Longer pieces live in `posts/*.md` and are published at `/p/<slug>.html`, listed
+under **Reading** at the top of the programme guide. The television itself never
+changes — that is the point of putting them there.
+
+```
+python3 scripts/tv.py post new <slug> --title "..." --summary "..."
+python3 scripts/tv.py post list
+python3 scripts/tv.py post digest [--days N | --since YYYY-MM-DD]
+```
+
+A post is markdown with a small frontmatter block. Two things beyond ordinary
+markdown:
+
+- `[[videoId]]` becomes a link carrying that programme's real title, pulled from
+  `playlist.json`, so a post cannot drift out of step with the schedule.
+- Every programme referenced that way is collected into a "Programmes mentioned"
+  list at the foot of the post automatically.
+
+**Never write an id from memory.** Get it from `post digest`, `list` or
+`inspect` and paste it. An invented id is caught at build time and printed as a
+warning — heed it, don't ship past it.
+
+### Why posts exist
+
+They reach what a single programme page cannot. One good piece about an archive
+of 129 commercials will outperform 129 thin pages about individual commercials,
+and it is honest in a way those pages would not be — writing 129 accurate
+articles about individual adverts is not something anyone can actually do. Posts
+also link out to dozens of programme pages, which is how those pages get found.
+
+### The round-up post
+
+The station's recurring post is a summary of what has recently gone out. It is
+openly a report, but it is written like something worth reading, not like a
+changelog.
+
+Start with `post digest`, which prints the real distribution — counts by
+channel, decades named in titles, and every id. Do not write these numbers from
+memory; the whole reason the command exists is that recalling what was added is
+exactly where invention creeps in.
+
+Then write it properly:
+
+- **Group by whatever is actually interesting this time** — channel, theme,
+  decade, a run of films that arrived together, a single playlist import that
+  changed the shape of a channel. Do not force the same grouping every week; if
+  the week was 100 lip syncs and nothing else, that is the story.
+- **Feature a handful of programmes** with `[[videoId]]`, chosen because they
+  are worth watching, not because they were first in the list.
+- **Cover what it is, why it matters, and any controversy** — the same three
+  questions as programme notes, applied to the batch rather than to one video.
+  Skip a heading rather than padding it.
+- **Give it a title someone would click.** Never "Weekly update" or "New videos,
+  August 2026". The title should say something specific about what arrived.
+- **Write in the station's voice** — friendly, direct, occasionally funny. It is
+  a person telling you what turned up, not a system emitting a manifest.
+
+Be honest when a batch is thin. A short post about three videos is fine; a long
+one padded to look substantial is not.
+
 ## Programme notes
 
 Each video can carry notes: what it is, why it matters, and any documented

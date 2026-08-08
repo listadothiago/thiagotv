@@ -377,6 +377,93 @@ def cmd_psa_clear(args):
     print(f'Pulled: "{psa["text"]}"')
 
 
+POSTS = ROOT / "posts"
+
+
+def cmd_post_digest(args):
+    """Gather what has been added recently, so a round-up starts from facts.
+
+    This prints material, not prose. The writing is the interesting part and it
+    is done by hand; what this removes is the tedious, error-prone half --
+    remembering what actually went out, and getting the ids right.
+    """
+    data = load()
+    since = args.since
+    if not since:
+        since = (dt.date.today() - dt.timedelta(days=args.days)).isoformat()
+
+    recent = [v for v in data["playlist"] if str(v.get("addedAt", "")) >= since]
+    if not recent:
+        print(f"Nothing added on or after {since}.")
+        return
+
+    by_tag = {}
+    for v in recent:
+        for t in (v.get("tags") or ["untagged"]):
+            by_tag.setdefault(t, []).append(v)
+
+    print(f"{len(recent)} programmes added since {since}\n")
+    print("BY CHANNEL")
+    for tag, vs in sorted(by_tag.items(), key=lambda kv: -len(kv[1])):
+        print(f"  {tag:<10} {len(vs):>4}")
+
+    decades = {}
+    for v in recent:
+        m = re.search(r"\b(19|20)(\d)\d\b", v["title"])
+        if m:
+            d = f"{m.group(1)}{m.group(2)}0s"
+            decades[d] = decades.get(d, 0) + 1
+    if decades:
+        print("\nDECADES NAMED IN TITLES (rough, from titles only)")
+        for d, n in sorted(decades.items()):
+            print(f"  {d:<10} {n:>4}")
+
+    print("\nEVERYTHING, newest first — copy ids into the post as [[id]]")
+    for v in sorted(recent, key=lambda v: str(v.get("addedAt", "")), reverse=True):
+        tags = ",".join(v.get("tags") or []) or "-"
+        note = "" if (v.get("dossier") or {}) else "  (no notes)"
+        print(f"  {v.get('addedAt','?')}  {v['videoId']}  [{tags}]  {v['title'][:56]}{note}")
+
+
+def cmd_post_new(args):
+    """Start a post. Writing it is the work; this just makes the file."""
+    slug = re.sub(r"[^a-z0-9]+", "-", args.slug.lower()).strip("-")
+    if not slug:
+        raise SystemExit("That slug reduces to nothing. Use letters and numbers.")
+    POSTS.mkdir(exist_ok=True)
+    path = POSTS / f"{slug}.md"
+    if path.exists():
+        raise SystemExit(f"{path} already exists. Edit it, or pick another slug.")
+    path.write_text(
+        "---\n"
+        f"title: {args.title or slug.replace('-', ' ').title()}\n"
+        f"date: {args.date or dt.date.today().isoformat()}\n"
+        f"summary: {args.summary or ''}\n"
+        "---\n\n"
+        "Write here. Blank lines separate paragraphs.\n\n"
+        "## A heading looks like this\n\n"
+        "Link a programme with [[videoId]] and it becomes a link carrying that\n"
+        "programme's real title, so the post can't drift out of step with the\n"
+        "schedule. Ordinary [links](https://example.com) work too.\n"
+    )
+    print(f"Created {path.relative_to(ROOT)}")
+    print("Write it, then publish.")
+
+
+def cmd_post_list(args):
+    if not POSTS.exists() or not list(POSTS.glob("*.md")):
+        print("No posts yet.")
+        return
+    for path in sorted(POSTS.glob("*.md")):
+        head = path.read_text()[:400]
+        title = re.search(r"^title:\s*(.+)$", head, re.M)
+        date = re.search(r"^date:\s*(.+)$", head, re.M)
+        words = len(re.sub(r"^---.*?---", "", path.read_text(), flags=re.S).split())
+        print(f"{(date.group(1) if date else '?'):<12} "
+              f"{(title.group(1) if title else path.stem)[:48]:<50} "
+              f"{words:>5} words  ({path.stem})")
+
+
 def cmd_bump(args):
     """Put a video back at the front of the Latest channel.
 
@@ -455,6 +542,21 @@ def main():
     p.add_argument("target")
     p.add_argument("date")
     p.set_defaults(func=cmd_date)
+
+    p = sub.add_parser("post", help="long-form pieces, listed in the programme guide")
+    post_sub = p.add_subparsers(dest="post_command", required=True)
+    q = post_sub.add_parser("new", help="create a post file to write into")
+    q.add_argument("slug", help="url slug, e.g. brazilian-teleshopping")
+    q.add_argument("--title")
+    q.add_argument("--summary")
+    q.add_argument("--date", help="YYYY-MM-DD, defaults to today")
+    q.set_defaults(func=cmd_post_new)
+    q = post_sub.add_parser("list", help="what's written so far")
+    q.set_defaults(func=cmd_post_list)
+    q = post_sub.add_parser("digest", help="material for a round-up: what was added recently")
+    q.add_argument("--days", type=int, default=7, help="how far back to look (default 7)")
+    q.add_argument("--since", help="or an explicit YYYY-MM-DD")
+    q.set_defaults(func=cmd_post_digest)
 
     p = sub.add_parser("bump", help="repost a video to the front of the Latest channel")
     p.add_argument("target", help="YouTube URL or 11-character video id")
