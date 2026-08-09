@@ -1424,8 +1424,23 @@
         var RESUME_END_MARGIN = 90;    // this close to the end counts as finished
         var PROGRESS_MS = 5000;
 
-        var resumePoints = Object.create(null);  // videoId -> { t: seconds, n: resumes }
+        // A resume point left long enough stops being useful. Whatever pulled you
+        // away for a month probably wasn't a bathroom break, and dropping someone
+        // back into the middle of something they may not even remember starting is
+        // worse than just starting it over. Deliberately retracing the dial (see
+        // forceResume / tuneBack) skips this check entirely -- that's an immediate,
+        // same-session action, never a stale one.
+        var RESUME_MAX_AGE_MS = 30 * 24 * 60 * 60 * 1000;   // 30 days
+
+        var resumePoints = Object.create(null);  // videoId -> { t: seconds, n: resumes, at: epoch ms }
         var progressTimer = null;
+
+        function isResumeFresh(record) {
+            // No timestamp means it predates this check -- treat it the same as
+            // too old, rather than trusting an age we don't actually know.
+            return !!(record && typeof record.at === 'number' &&
+                      (Date.now() - record.at) < RESUME_MAX_AGE_MS);
+        }
 
         function loadResume() {
             var store = storage();
@@ -1435,7 +1450,7 @@
                 Object.keys(raw).forEach(function (id) {
                     var r = raw[id];
                     if (r && typeof r.t === 'number' && typeof r.n === 'number') {
-                        resumePoints[id] = { t: r.t, n: r.n };
+                        resumePoints[id] = { t: r.t, n: r.n, at: typeof r.at === 'number' ? r.at : 0 };
                     }
                 });
             } catch (e) {
@@ -1451,21 +1466,25 @@
             try {
                 var merged = {};
                 try {
-                    var existing = JSON.parse(store.getItem(RESUME_KEY) || '{}');
+    var existing = JSON.parse(store.getItem(RESUME_KEY) || '{}');
                     Object.keys(existing).forEach(function (id) {
                         var r = existing[id];
-                        if (r && typeof r.t === 'number') merged[id] = { t: r.t, n: r.n || 0 };
+                        if (r && typeof r.t === 'number') {
+                            merged[id] = { t: r.t, n: r.n || 0, at: typeof r.at === 'number' ? r.at : 0 };
+                        }
                     });
                 } catch (e) { /* unreadable: this write replaces it */ }
 
                 Object.keys(resumePoints).forEach(function (id) {
                     var mine = resumePoints[id];
                     var theirs = merged[id];
+                    // Furthest position wins, and its timestamp travels with it --
+                    // the two describe the same visit, so they have to agree.
+                    var tookMine = !theirs || mine.t >= theirs.t;
                     merged[id] = {
-                        // Furthest position and highest count both win: whichever tab
-                        // got further has the more useful answer.
-                        t: theirs ? Math.max(mine.t, theirs.t) : mine.t,
-                        n: theirs ? Math.max(mine.n, theirs.n || 0) : mine.n
+                        t: tookMine ? mine.t : theirs.t,
+                        n: theirs ? Math.max(mine.n, theirs.n || 0) : mine.n,
+                        at: tookMine ? (mine.at || 0) : (theirs.at || 0)
                     };
                 });
 
@@ -1527,7 +1546,7 @@
                 return;
             }
             var existing = resumePoints[video.videoId];
-            resumePoints[video.videoId] = { t: t, n: existing ? existing.n : 0 };
+            resumePoints[video.videoId] = { t: t, n: existing ? existing.n : 0, at: Date.now() };
             saveResume();
         }
 
@@ -1552,7 +1571,7 @@
                     return;
                 }
                 var existing = resumePoints[videoId];
-                resumePoints[videoId] = { t: t, n: existing ? existing.n : 0 };
+                resumePoints[videoId] = { t: t, n: existing ? existing.n : 0, at: Date.now() };
                 saveResume();
             }, PROGRESS_MS);
         }
@@ -2036,11 +2055,17 @@
             markSource();        // the credit follows the programme, not the channel
             updateActButton();   // and the button knows whose programme it is
 
-            // Work out whether this is a pick-up-where-you-left-off.
+            // Work out whether this is a pick-up-where-you-left-off. A forced
+            // resume (tuneBack, retracing the dial) is always honoured -- it's an
+            // immediate action within the same session, never a stale one. The
+            // ordinary path additionally requires the record to still be fresh:
+            // past RESUME_MAX_AGE_MS it's treated as though it never existed, and
+            // the video starts over rather than dropping the viewer into a scene
+            // they may not even remember reaching.
             var startAt = 0;
             var record = resumePoints[video.videoId];
             if (record && record.t > RESUME_MIN_SECONDS &&
-                (forceResume || (current.resume && record.n < MAX_RESUMES))) {
+                (forceResume || (current.resume && record.n < MAX_RESUMES && isResumeFresh(record)))) {
                 startAt = record.t;
             }
             var wasForced = forceResume;
