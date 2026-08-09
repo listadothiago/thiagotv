@@ -364,6 +364,37 @@
             letter-spacing: .04em;
         }
         .channel-tag[data-editing] .channel-tag-src { display: none; }
+
+        /* Bottom-left, facing the fullscreen button across the picture. Reads
+           REPOST on someone else's programme and BUMP on your own -- the same
+           gesture either way: put this back in front of people. */
+        .act-btn {
+            position: absolute;
+            left: calc(var(--px) * 2);
+            bottom: calc(var(--px) * 2);
+            padding: calc(var(--px) * 1.4) calc(var(--px) * 2.2);
+            border: 0;
+            cursor: pointer;
+            font: 700 calc(var(--px) * 2.4) / 1 'Courier New', monospace;
+            letter-spacing: .14em;
+            text-transform: uppercase;
+            color: var(--brass);
+            background: rgba(5, 7, 10, .62);
+            box-shadow: inset 0 0 0 1px rgba(224, 179, 86, .45);
+            opacity: 0;
+            transition: opacity .14s steps(2);
+        }
+        .screen-glass:hover .act-btn,
+        .act-btn:focus-visible { opacity: 1; }
+        .act-btn:hover { background: rgba(5, 7, 10, .85); }
+        .act-btn[hidden] { display: none; }
+        /* Held lit for a beat after a click, so the confirmation is readable
+           even if the pointer has already left. */
+        .act-btn[data-done] {
+            opacity: 1 !important;
+            color: var(--paper, #f4efe4);
+            background: rgba(5, 7, 10, .92);
+        }
         .channel-tag:hover { background: rgba(5, 7, 10, .85); }
         /* While you are typing it stays put, whatever the pointer does. */
         .channel-tag[data-editing] {
@@ -992,6 +1023,7 @@
                     <div class="screen-glass" id="screenGlass">
                         <div class="channel-tag" id="channelTag"
                              title="Double-click to rename this channel"></div>
+                        <button class="act-btn" id="actBtn" type="button"></button>
                         <button class="fullscreen-btn" id="fullscreenBtn"
                                 aria-label="Fullscreen"></button>
                     </div>
@@ -1148,6 +1180,7 @@
             if (el.channelTag) {
                 el.channelTag.textContent = name;
                 markSource();                        // and the corner says where it came from
+                updateActButton();
             }
         }
 
@@ -1167,6 +1200,77 @@
             span.textContent = ' via ' + src.name;
             el.channelTag.appendChild(span);
         }
+
+        // ---- Repost and bump -----------------------------------------------------
+        // One gesture, two names. A programme that came from somewhere else is
+        // REPOSTed -- you are passing on someone else's find, and the credit chain
+        // travels with it. One of your own is BUMPed -- back to the head of Latest,
+        // in front of people who have not seen it.
+        //
+        // Neither can write to playlist.json: this is a static page, and the file
+        // is in a repository the browser cannot reach. So the click does the two
+        // things a browser can honestly do -- writes the intent to a queue in this
+        // browser, and puts the command on the clipboard. The station's owner drains
+        // the queue next time they open the station; anyone else gets a line they
+        // can paste into their own.
+        var QUEUE_KEY = 'thiagotv.queue.v1';
+
+        function queued() {
+            try { return JSON.parse(localStorage.getItem(QUEUE_KEY)) || []; }
+            catch (e) { return []; }
+        }
+
+        function currentVideo() {
+            return current && current.queue && !current.caughtUp
+                ? current.queue[current.index] : null;
+        }
+
+        function updateActButton() {
+            if (!el.actBtn) return;
+            var video = currentVideo();
+            if (!video || (current && current.kind === 'text')) {
+                el.actBtn.hidden = true;
+                return;
+            }
+            el.actBtn.hidden = false;
+            el.actBtn.removeAttribute('data-done');
+            var mine = !video.source;
+            el.actBtn.textContent = mine ? 'Bump' : 'Repost';
+            el.actBtn.title = mine
+                ? 'Send this back to the front of Latest'
+                : 'Pass this on, credit and all';
+        }
+
+        function actOnCurrent() {
+            var video = currentVideo();
+            if (!video) return;
+            var mine = !video.source;
+            var entry = {
+                action: mine ? 'bump' : 'repost',
+                videoId: video.videoId,
+                title: video.title || '',
+                at: new Date().toISOString()
+            };
+            // The credit chain travels with the repost; this station is only the
+            // most recent hop, never the origin.
+            if (!mine) entry.source = video.source;
+
+            var q = queued().filter(function (e) { return e.videoId !== video.videoId; });
+            q.push(entry);
+            try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q)); } catch (e) {}
+
+            var command = mine
+                ? 'bump ' + video.videoId
+                : 'repost ' + video.videoId + ' from ' + (video.source.name || 'unknown');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(command).catch(function () {});
+            }
+
+            el.actBtn.textContent = mine ? 'Bumped' : 'Reposted';
+            el.actBtn.setAttribute('data-done', '');
+            setTimeout(updateActButton, 1800);
+        }
+
 
         loadChannelNames();
 
@@ -1549,6 +1653,7 @@
             forget: document.getElementById('forgetLink'),
             fullscreen: document.getElementById('fullscreenBtn'),
             channelTag: document.getElementById('channelTag'),
+            actBtn: document.getElementById('actBtn'),
             screenInner: document.querySelector('.screen-inner'),
             nowLink: document.getElementById('nowLink'),
             nowRow: document.querySelector('.stage-now'),
@@ -1928,7 +2033,8 @@
             if (current.offAir) { showSignOff(); return; }
 
             var video = current.queue[current.index];
-            markSource();      // the credit follows the programme, not the channel
+            markSource();        // the credit follows the programme, not the channel
+            updateActButton();   // and the button knows whose programme it is
 
             // Work out whether this is a pick-up-where-you-left-off.
             var startAt = 0;
@@ -2674,6 +2780,14 @@
             e.stopPropagation();
             toggleFullscreen();
         });
+
+        if (el.actBtn) {
+            el.actBtn.addEventListener('click', function (e) {
+                e.preventDefault();
+                e.stopPropagation();
+                actOnCurrent();
+            });
+        }
 
         // ---- Renaming a channel from the picture ---------------------------------
         // Double-click the name in the corner and type over it. Enter keeps it,
