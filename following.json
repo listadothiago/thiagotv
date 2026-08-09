@@ -1,0 +1,15 @@
+{
+  "spec": 1,
+  "following": [
+    {
+      "kind": "youtube",
+      "name": "Casual Geographic",
+      "url": "https://www.youtube.com/channel/UC5Yo88QF-chdugJbAnB2tUw",
+      "feed": "https://www.youtube.com/feeds/videos.xml?channel_id=UC5Yo88QF-chdugJbAnB2tUw",
+      "channel": "nature",
+      "followedAt": "2026-08-08",
+      "lastSeen": "2026-07-31",
+      "lastVideoId": "j5pNEsghKCU"
+    }
+  ]
+}

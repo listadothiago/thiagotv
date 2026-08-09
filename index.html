@@ -355,6 +355,15 @@
         }
         .screen-glass:hover .channel-tag { opacity: 1; }
         .channel-tag { pointer-events: auto; cursor: text; }
+        /* The credit is quieter than the channel: it is a footnote over the
+           picture, not a second title. */
+        .channel-tag-src {
+            opacity: .62;
+            font-weight: 400;
+            text-transform: none;
+            letter-spacing: .04em;
+        }
+        .channel-tag[data-editing] .channel-tag-src { display: none; }
         .channel-tag:hover { background: rgba(5, 7, 10, .85); }
         /* While you are typing it stays put, whatever the pointer does. */
         .channel-tag[data-editing] {
@@ -1135,8 +1144,28 @@
         // never disagree.
         function showChannelName(ch) {
             var name = channelDisplayName(ch);
-            el.channelValue.textContent = name;
-            if (el.channelTag) el.channelTag.textContent = name;
+            el.channelValue.textContent = name;      // the dial reads the channel, only
+            if (el.channelTag) {
+                el.channelTag.textContent = name;
+                markSource();                        // and the corner says where it came from
+            }
+        }
+
+        // Programmes that arrived by following someone else carry a `source`, and
+        // say so over the picture. Credit belongs next to the thing, not buried on
+        // a page nobody opens -- and a station that quietly passes off other
+        // people's finds as its own is not one worth following back.
+        function markSource() {
+            if (!el.channelTag) return;
+            var video = current && current.queue && current.queue[current.index];
+            var src = video && video.source;
+            var old = el.channelTag.querySelector('.channel-tag-src');
+            if (old) old.remove();
+            if (!src || !src.name) return;
+            var span = document.createElement('span');
+            span.className = 'channel-tag-src';
+            span.textContent = ' via ' + src.name;
+            el.channelTag.appendChild(span);
         }
 
         loadChannelNames();
@@ -1899,6 +1928,7 @@
             if (current.offAir) { showSignOff(); return; }
 
             var video = current.queue[current.index];
+            markSource();      // the credit follows the programme, not the channel
 
             // Work out whether this is a pick-up-where-you-left-off.
             var startAt = 0;
@@ -2654,6 +2684,8 @@
                 e.preventDefault();
                 if (renamingChannel) return;
                 renamingChannel = true;
+                // Only the channel's name is yours to edit; the credit steps aside.
+                this.textContent = channelDisplayName(CHANNELS[channelIndex]);
                 this.setAttribute('data-editing', '');
                 this.setAttribute('contenteditable', 'plaintext-only');
                 this.focus();
