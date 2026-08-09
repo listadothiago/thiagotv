@@ -329,6 +329,41 @@
         .fullscreen-btn:focus-visible { opacity: 1; }
         .fullscreen-btn:hover { background: rgba(5, 7, 10, .85); }
 
+        /* The channel's name, in the corner opposite the fullscreen button, on
+           the same hover. Old sets flashed the channel over the picture for a
+           second after you turned the dial; this is that, held for as long as
+           you are looking. The name is the viewer's to change -- see
+           channelDisplayName(). */
+        .channel-tag {
+            position: absolute;
+            left: calc(var(--px) * 2);
+            top: calc(var(--px) * 2);
+            padding: calc(var(--px) * 1.2) calc(var(--px) * 2);
+            font: 700 calc(var(--px) * 2.6) / 1 'Courier New', monospace;
+            letter-spacing: .12em;
+            text-transform: uppercase;
+            color: var(--brass);
+            background: rgba(5, 7, 10, .62);
+            box-shadow: inset 0 0 0 1px rgba(224, 179, 86, .45);
+            opacity: 0;
+            pointer-events: none;
+            white-space: nowrap;
+            max-width: 60%;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            transition: opacity .14s steps(2);
+        }
+        .screen-glass:hover .channel-tag { opacity: 1; }
+        .channel-tag { pointer-events: auto; cursor: text; }
+        .channel-tag:hover { background: rgba(5, 7, 10, .85); }
+        /* While you are typing it stays put, whatever the pointer does. */
+        .channel-tag[data-editing] {
+            opacity: 1 !important;
+            outline: none;
+            background: rgba(5, 7, 10, .92);
+            box-shadow: inset 0 0 0 1px var(--brass);
+        }
+
         /* Four corner brackets: the universal sign, drawn as pixels. */
         .fullscreen-btn::before,
         .fullscreen-btn::after {
@@ -946,6 +981,8 @@
                          always the wrong object in the room. Seeking and the full
                          player remain one click away on the programme page. -->
                     <div class="screen-glass" id="screenGlass">
+                        <div class="channel-tag" id="channelTag"
+                             title="Double-click to rename this channel"></div>
                         <button class="fullscreen-btn" id="fullscreenBtn"
                                 aria-label="Fullscreen"></button>
                     </div>
@@ -1058,6 +1095,51 @@
 
         var library = [];        // everything from playlist.json
         var psa = null;          // the current bulletin, if any
+
+        // ---- Channel names -------------------------------------------------------
+        // The station names its channels in CHANNELS above. A viewer can rename any
+        // of them for themselves -- their set, their dial -- and the new name is
+        // what shows on the dial readout and in the corner of the picture. Kept in
+        // their own browser and sent nowhere, like the viewing memory below.
+        //
+        // An empty or whitespace-only override is no override: the station's name
+        // comes back rather than leaving a blank channel.
+        var CHNAMES_KEY = 'thiagotv.channelNames.v1';
+        var channelNames = Object.create(null);
+        var renamingChannel = false;   // true while the corner label is being typed in
+
+        function loadChannelNames() {
+            try {
+                var raw = localStorage.getItem(CHNAMES_KEY);
+                if (raw) channelNames = JSON.parse(raw) || Object.create(null);
+            } catch (e) { channelNames = Object.create(null); }
+        }
+
+        function channelDisplayName(ch) {
+            if (!ch) return '';
+            var custom = channelNames[ch.id];
+            if (typeof custom === 'string' && custom.trim()) return custom.trim();
+            return ch.label;
+        }
+
+        function renameChannel(id, name) {
+            // Capped: the label sits over the picture, and a sentence is not a
+            // channel name.
+            if (typeof name === 'string' && name.trim()) channelNames[id] = name.trim().slice(0, 28);
+            else delete channelNames[id];        // back to the station's own name
+            try { localStorage.setItem(CHNAMES_KEY, JSON.stringify(channelNames)); } catch (e) {}
+            showChannelName(CHANNELS[channelIndex]);
+        }
+
+        // Both places the channel's name appears, written together so they can
+        // never disagree.
+        function showChannelName(ch) {
+            var name = channelDisplayName(ch);
+            el.channelValue.textContent = name;
+            if (el.channelTag) el.channelTag.textContent = name;
+        }
+
+        loadChannelNames();
 
         // ---- Viewing memory ------------------------------------------------------
         // What this viewer has already watched, kept in their own browser and sent
@@ -1437,6 +1519,7 @@
             psaStamp: document.getElementById('psaStamp'),
             forget: document.getElementById('forgetLink'),
             fullscreen: document.getElementById('fullscreenBtn'),
+            channelTag: document.getElementById('channelTag'),
             screenInner: document.querySelector('.screen-inner'),
             nowLink: document.getElementById('nowLink'),
             nowRow: document.querySelector('.stage-now'),
@@ -2004,7 +2087,7 @@
 
             forceResume = true;   // pick it up exactly, whatever the attempt count says
 
-            el.channelValue.textContent = ch.label;
+            showChannelName(ch);
             turnKnob(-1);
             showCard({ mode: 'snow', title: 'Tuning', holding: false });
             setTimeout(playCurrent, 400);
@@ -2067,7 +2150,7 @@
             // A channel you left off air has had time to start its next broadcast.
             if (current.offAir) signBackOn(ch, current);
 
-            el.channelValue.textContent = ch.label;
+            showChannelName(ch);
             if (spin) turnKnob(spin); else placeKnob(channelIndex);
 
             // A beat of snow between channels: the gap is what sells the dial.
@@ -2562,6 +2645,46 @@
             toggleFullscreen();
         });
 
+        // ---- Renaming a channel from the picture ---------------------------------
+        // Double-click the name in the corner and type over it. Enter keeps it,
+        // Escape drops it, and clearing the field puts the station's own name back.
+        // Nothing leaves this browser -- see channelDisplayName().
+        if (el.channelTag) {
+            el.channelTag.addEventListener('dblclick', function (e) {
+                e.preventDefault();
+                if (renamingChannel) return;
+                renamingChannel = true;
+                this.setAttribute('data-editing', '');
+                this.setAttribute('contenteditable', 'plaintext-only');
+                this.focus();
+                var range = document.createRange();
+                range.selectNodeContents(this);
+                var sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+            });
+
+            el.channelTag.addEventListener('keydown', function (e) {
+                if (!renamingChannel) return;
+                e.stopPropagation();          // the dial keys stay out of this
+                if (e.key === 'Enter') { e.preventDefault(); this.blur(); }
+                else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    this.textContent = channelDisplayName(CHANNELS[channelIndex]);
+                    this.blur();
+                }
+            });
+
+            el.channelTag.addEventListener('blur', function () {
+                if (!renamingChannel) return;
+                renamingChannel = false;
+                this.removeAttribute('data-editing');
+                this.removeAttribute('contenteditable');
+                window.getSelection().removeAllRanges();
+                renameChannel(CHANNELS[channelIndex].id, this.textContent);
+            });
+        }
+
         el.power.addEventListener('click', function () {
             thunkSound(!powered);
             if (powered) powerOff(); else powerOn();
@@ -2582,6 +2705,7 @@
         });
 
         document.addEventListener('keydown', function (e) {
+            if (renamingChannel) return;   // the dial is not the keyboard's while you type
             if (e.key === 'ArrowRight') tuneForward();
             else if (e.key === 'ArrowLeft') tuneBack();
             else if (e.key === 'ArrowUp') stepVolume(1);

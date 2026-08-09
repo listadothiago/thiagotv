@@ -98,9 +98,11 @@ def read_channels():
         line = line.strip()
         if not line.startswith("{"):
             continue
+        cid = re.search(r"id: '([^']+)'", line)
         label = re.search(r"label: '([^']+)'", line)
         tag = re.search(r"tag: '([^']+)'", line)
         channels.append({
+            "id": cid.group(1) if cid else None,
             "label": label.group(1) if label else "?",
             "tag": tag.group(1) if tag else None,
             "text": "kind: 'text'" in line,
@@ -140,6 +142,39 @@ def cmd_channels(args):
     orphans = sorted(set(counts) - dial_tags)
     if orphans:
         print(f"\nTags with no channel on the dial (invisible): {', '.join(orphans)}")
+
+
+def cmd_channel_rename(args):
+    """Rename a channel on the dial, for everyone.
+
+    This edits the station's own name in CHANNELS -- the one that ships in the
+    page and goes in the commit. A viewer who has renamed the same channel in
+    their own browser keeps their name; theirs wins over this one by design.
+    """
+    channels = read_channels()
+    match = next((c for c in channels if c["id"] == args.channel), None)
+    if not match:
+        known = ", ".join(c["id"] for c in channels if c["id"])
+        raise SystemExit(f"No channel with id '{args.channel}'. On the dial: {known}")
+
+    name = args.name.strip()
+    if not name:
+        raise SystemExit("A channel needs a name.")
+    if "'" in name:
+        raise SystemExit("Apostrophes break the CHANNELS array; pick a name without one.")
+    if len(name) > 28:
+        raise SystemExit("Too long for the corner of the picture -- keep it under 28 characters.")
+
+    path = ROOT / "index.html"
+    html = path.read_text()
+    block = re.search(r"var CHANNELS = \[(.*?)\];", html, re.S)
+    body = block.group(1)
+    pattern = re.compile(r"(\{[^{}]*id: '%s'[^{}]*label: ')([^']+)(')" % re.escape(args.channel))
+    if not pattern.search(body):
+        raise SystemExit(f"Could not find the label for '{args.channel}' in index.html.")
+    new_body = pattern.sub(lambda m: m.group(1) + name + m.group(3), body, count=1)
+    path.write_text(html[:block.start(1)] + new_body + html[block.end(1):])
+    print(f"{match['label']} -> {name}")
 
 
 def cmd_inspect(args):
@@ -571,6 +606,13 @@ def main():
 
     p = sub.add_parser("channels", help="the dial: channels, tags and how full each is")
     p.set_defaults(func=cmd_channels)
+
+    p = sub.add_parser("channel", help="the dial itself")
+    channel_sub = p.add_subparsers(dest="channel_cmd", required=True)
+    q = channel_sub.add_parser("rename", help="rename a channel for everyone")
+    q.add_argument("channel", help="channel id, e.g. nature")
+    q.add_argument("name", help="the new name, as it should read on the dial")
+    q.set_defaults(func=cmd_channel_rename)
 
     p = sub.add_parser("inspect", help="what a video is, without adding it")
     p.add_argument("target", help="YouTube URL or 11-character video id")
