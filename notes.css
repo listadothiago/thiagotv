@@ -60,6 +60,7 @@ p {
   color: #8a7a5c;
 }
 .foot a { color: #8a2f1d; }
+.foot .credit { margin-top: 6px; opacity: .7; }
 .thumb { display: block; width: 100%; height: auto; margin-bottom: 22px; }
 /* The programme itself, so the page is somewhere to watch rather than only to
    read about. Loaded lazily and from the no-cookie host: a page of notes has no

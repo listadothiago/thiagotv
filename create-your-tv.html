@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Create your TV with Claude Code — ThiagoTV</title>
+<meta name="description" content="Download the RetroTV plugin and build your own hand-picked, retro-television-style station on top of Claude Code, deployed free on Vercel.">
+<link rel="canonical" href="https://thiagotv.vercel.app/create-your-tv.html">
+<link rel="stylesheet" href="notes.css">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Create your TV with Claude Code">
+<meta property="og:description" content="Download the RetroTV plugin and build your own retro-television station, deployed free on Vercel.">
+<script defer src="/_vercel/insights/script.js"></script>
+</head>
+<body>
+<main class="sheet">
+<p class="home"><a href="index.html">&larr; ThiagoTV</a></p>
+<p class="eyebrow">Build your own</p>
+<h1>Create your TV with Claude Code</h1>
+<p class="meta">A retro television, running on your own hand-picked playlist</p>
+<hr class="rule">
+
+<p>ThiagoTV is a small static site: an <code>index.html</code> that draws the
+set and a <code>playlist.json</code> that is the schedule. No server, no
+database, no API keys. It runs the same way for you — you get your own dial,
+your own channels, your own picks, deployed free on Vercel, driven entirely by
+talking to Claude Code.</p>
+
+<p class="home" style="margin: 22px 0;">
+<a href="downloads/retrotv-plugin.zip">Download retrotv-plugin.zip</a>
+</p>
+<p class="meta">~138&nbsp;KB &middot; unzips to a ready-to-run station with a demo lineup across ten channels</p>
+
+<h2>How it works</h2>
+
+<p><strong>1. Unzip it and open the folder in Claude Code.</strong> Run
+<code>claude</code> from inside it, or open the folder in the Claude Code
+desktop app.</p>
+
+<p><strong>2. Just talk to it.</strong> The plugin ships a skill that does the
+actual station management — renaming the station, adding videos, tagging them
+onto channels, writing the notes each programme page needs. Paste a YouTube
+link, ask it to find things for a channel you're building out, or ask it to
+walk you through the whole setup. You don't need to touch
+<code>playlist.json</code> by hand.</p>
+
+<p><strong>3. Watch it locally.</strong> <code>python3 -m http.server 8000</code>,
+then open <code>localhost:8000</code>. The plain <code>file://</code> route
+doesn't work — the YouTube player needs a real origin.</p>
+
+<p><strong>4. Push it to GitHub.</strong> Create an empty repo, then:</p>
+<p><code>git init &amp;&amp; git add -A &amp;&amp; git commit -m "my station"<br>
+git remote add origin git@github.com:you/your-station.git<br>
+git push -u origin main</code></p>
+
+<p><strong>5. Deploy on Vercel.</strong> Import the repo at
+<a href="https://vercel.com/new">vercel.com/new</a> — it's a static site, no
+build command or framework preset needed. Deploy, and you'll get a
+<code>your-station.vercel.app</code> URL.</p>
+
+<p><strong>6. Point the station at its real address.</strong> Programme pages,
+the sitemap and the station manifest all need to know the real domain:</p>
+<p><code>python3 scripts/build.py --base-url https://your-station.vercel.app<br>
+./scripts/publish.sh "go live"</code></p>
+<p>That sets <code>site.url</code> in <code>playlist.json</code>, so every
+publish after this one remembers it automatically.</p>
+
+<h2>Every change after that</h2>
+<p>One command: <code>./scripts/publish.sh "what changed"</code>. It rebuilds
+every generated page from <code>playlist.json</code> before committing and
+pushing, so the static pages never drift out of sync with the schedule —
+that's the only thing you need once the station is live.</p>
+
+<h2>A quiet default</h2>
+<p>Every station this plugin builds credits this page in its own footer —
+"Powered by RetroTV, build your own" — so anyone who lands on one of your
+programme pages can find their way here too. It's a plain line of HTML in
+<code>scripts/build.py</code>; delete it if you'd rather your station not
+carry it.</p>
+
+<hr class="rule">
+<p class="empty">Built on the same engine as ThiagoTV. Read the plugin's own
+<code>README.md</code> for the full command reference once you're in.</p>
+
+<footer class="foot">
+<p><a href="guide.html">Programme guide</a></p>
+</footer>
+</main>
+</body>
+</html>

@@ -47,6 +47,16 @@ SECTIONS = [
 
 ANALYTICS = '''<script defer src="/_vercel/insights/script.js"></script>'''
 
+# Every station built from this template credits the same place back by
+# default -- the page that hands out the plugin and walks someone through
+# building their own. A station owner can strip this line, but it shouldn't
+# take active effort to end up without it.
+RETROTV_HOME = "https://thiagotv.vercel.app/create-your-tv.html"
+RETROTV_CREDIT = (
+    f'<p class="credit">Powered by <a href="{RETROTV_HOME}">RetroTV</a> '
+    f'&mdash; build your own</p>'
+)
+
 def read_posts():
     """Posts are markdown files in posts/, with a small frontmatter block.
 
@@ -259,6 +269,7 @@ p {
   color: #8a7a5c;
 }
 .foot a { color: #8a2f1d; }
+.foot .credit { margin-top: 6px; opacity: .7; }
 .thumb { display: block; width: 100%; height: auto; margin-bottom: 22px; }
 /* The programme itself, so the page is somewhere to watch rather than only to
    read about. Loaded lazily and from the no-cookie host: a page of notes has no
@@ -456,6 +467,7 @@ def video_page(video, base_url, station):
 {chr(10).join(body_parts)}
 <footer class="foot">
 <p><a href="{esc(guide)}">Programme guide</a></p>
+{RETROTV_CREDIT}
 </footer>
 </main>
 </body>
@@ -534,6 +546,7 @@ def channel_page(tag, videos, base_url, station):
 </ul>
 <footer class="foot">
 <p><a href="{esc(guide)}">Programme guide</a></p>
+{RETROTV_CREDIT}
 </footer>
 </main>
 {WATCHED_SCRIPT}
@@ -598,6 +611,7 @@ def post_page(post, videos_by_id, base_url, station):
 {listed}
 <footer class="foot">
 <p><a href="{esc(guide)}">Programme guide</a></p>
+{RETROTV_CREDIT}
 </footer>
 </main>
 {WATCHED_SCRIPT}
@@ -725,6 +739,7 @@ def guide_page(videos, base_url, station, posts=()):
 </ul>
 <footer class="foot">
 <p id="watchedSummary"></p>
+{RETROTV_CREDIT}
 </footer>
 </main>
 {WATCHED_SCRIPT}
