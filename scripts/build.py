@@ -34,7 +34,10 @@ CHANNEL_DIR = ROOT / "c"
 POST_SRC = ROOT / "posts"
 POST_OUT = ROOT / "p"
 
-GENERATED = ["guide.html", "notes.css", "sitemap.xml", "robots.txt"]
+GENERATED = ["guide.html", "notes.css", "sitemap.xml", "robots.txt", "station.json"]
+
+STATION_SPEC = 1
+LATEST_COUNT = 10
 
 SECTIONS = [
     ("summary", "Summary"),
@@ -746,6 +749,56 @@ def sitemap(videos, base_url, tags=(), posts=()):
 """
 
 
+def station_manifest(videos, base_url, station, psa, tags):
+    """The machine-readable half of the station: what another RetroTV needs to
+    follow this one without a human reading playlist.json by hand.
+
+    Channels are derived from the tags actually carried by the schedule, the
+    same source channel_page() reads from, rather than duplicating the
+    CHANNELS array that lives in index.html -- one source of truth for what a
+    channel is, so this can never drift out of step with the dial itself.
+    """
+    channels = []
+    for tag in tags:
+        carried = [v for v in videos if tag in (v.get("tags") or [])]
+        channels.append({
+            "id": tag,
+            "label": tag.title(),
+            "url": f"{base_url}/c/{tag}.html",
+            "count": len(carried),
+        })
+
+    bulletin = None
+    if psa and psa.get("text"):
+        bulletin = {
+            "text": psa["text"],
+            "postedAt": psa.get("postedAt"),
+            "hours": psa.get("hours"),
+        }
+
+    latest = [
+        {
+            "videoId": v["videoId"],
+            "title": v.get("title", v["videoId"]),
+            "tags": v.get("tags") or [],
+            "addedAt": v.get("addedAt"),
+            "url": f"{base_url}/v/{v['videoId']}.html",
+            **({"source": v["source"]} if v.get("source") else {}),
+        }
+        for v in videos[:LATEST_COUNT]
+    ]
+
+    return {
+        "spec": STATION_SPEC,
+        "station": station.get("title", "ThiagoTV"),
+        "url": base_url,
+        "channels": channels,
+        "playlist": f"{base_url}/playlist.json",
+        "bulletin": bulletin,
+        "latest": latest,
+    }
+
+
 def robots(base_url):
     # Answering LLM crawlers explicitly rather than by omission: the notes exist
     # to be read and cited, so the crawlers that do that are welcomed by name.
@@ -815,17 +868,21 @@ def main():
     if base_url:
         (ROOT / "sitemap.xml").write_text(sitemap(videos, base_url, tags, posts))
         (ROOT / "robots.txt").write_text(robots(base_url))
+        (ROOT / "station.json").write_text(
+            json.dumps(station_manifest(videos, base_url, station, data.get("psa"), tags),
+                       indent=2, ensure_ascii=False)
+        )
     else:
         # Without a real origin these two files would advertise wrong URLs, which
         # is worse than not shipping them.
-        for name in ("sitemap.xml", "robots.txt"):
+        for name in ("sitemap.xml", "robots.txt", "station.json"):
             (ROOT / name).unlink(missing_ok=True)
 
     with_notes = sum(1 for v in videos if (v.get("dossier") or {}))
     print(f"Built {len(videos)} programme pages ({with_notes} with notes), "
           f"{len(tags)} channel pages, {len(posts)} posts, guide.html")
     if base_url:
-        print(f"       sitemap.xml and robots.txt for {base_url}")
+        print(f"       sitemap.xml, robots.txt and station.json for {base_url}")
     else:
         print("       no site.url set -- skipped sitemap.xml and robots.txt.")
         print('       Set it with: "site": {"url": "https://..."} in playlist.json')

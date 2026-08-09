@@ -1,0 +1,173 @@
+{
+  "spec": 1,
+  "station": "ThiagoTV",
+  "url": "https://thiagotv.vercel.app",
+  "channels": [
+    {
+      "id": "ads",
+      "label": "Ads",
+      "url": "https://thiagotv.vercel.app/c/ads.html",
+      "count": 29
+    },
+    {
+      "id": "cartoon",
+      "label": "Cartoon",
+      "url": "https://thiagotv.vercel.app/c/cartoon.html",
+      "count": 147
+    },
+    {
+      "id": "comedy",
+      "label": "Comedy",
+      "url": "https://thiagotv.vercel.app/c/comedy.html",
+      "count": 99
+    },
+    {
+      "id": "drag",
+      "label": "Drag",
+      "url": "https://thiagotv.vercel.app/c/drag.html",
+      "count": 102
+    },
+    {
+      "id": "films",
+      "label": "Films",
+      "url": "https://thiagotv.vercel.app/c/films.html",
+      "count": 23
+    },
+    {
+      "id": "history",
+      "label": "History",
+      "url": "https://thiagotv.vercel.app/c/history.html",
+      "count": 27
+    },
+    {
+      "id": "music",
+      "label": "Music",
+      "url": "https://thiagotv.vercel.app/c/music.html",
+      "count": 197
+    },
+    {
+      "id": "nature",
+      "label": "Nature",
+      "url": "https://thiagotv.vercel.app/c/nature.html",
+      "count": 17
+    },
+    {
+      "id": "science",
+      "label": "Science",
+      "url": "https://thiagotv.vercel.app/c/science.html",
+      "count": 2
+    },
+    {
+      "id": "vignette",
+      "label": "Vignette",
+      "url": "https://thiagotv.vercel.app/c/vignette.html",
+      "count": 118
+    }
+  ],
+  "playlist": "https://thiagotv.vercel.app/playlist.json",
+  "bulletin": {
+    "text": "The Films channel just got a lot deeper. Sci-fi, horror and a few things that defy classification are now in rotation. Turn the dial.",
+    "postedAt": "2026-08-07T22:58:01Z",
+    "hours": 72.0
+  },
+  "latest": [
+    {
+      "videoId": "0H829R2utW0",
+      "title": "America is SICK - Weekly Weird News",
+      "tags": [
+        "comedy"
+      ],
+      "addedAt": "2026-08-08",
+      "url": "https://thiagotv.vercel.app/v/0H829R2utW0.html",
+      "source": {
+        "kind": "youtube",
+        "name": "Internet Today",
+        "url": "https://www.youtube.com/@InternetTodayTV"
+      }
+    },
+    {
+      "videoId": "42K0CFMq5Ks",
+      "title": "01 Jiz!!!",
+      "tags": [
+        "cartoon"
+      ],
+      "addedAt": "2026-08-08",
+      "url": "https://thiagotv.vercel.app/v/42K0CFMq5Ks.html"
+    },
+    {
+      "videoId": "tzoRnOJzDnw",
+      "title": "Boy Band by Joe Cappa | Off The Air | adult swim",
+      "tags": [
+        "cartoon",
+        "vignette"
+      ],
+      "addedAt": "2026-08-08",
+      "url": "https://thiagotv.vercel.app/v/tzoRnOJzDnw.html"
+    },
+    {
+      "videoId": "BBb2gC0lByk",
+      "title": "Can Humans REALLY Leave Earth? [Interstellar Spaceship]",
+      "tags": [
+        "science"
+      ],
+      "addedAt": "2026-08-08",
+      "url": "https://thiagotv.vercel.app/v/BBb2gC0lByk.html"
+    },
+    {
+      "videoId": "blQGQCD7MxI",
+      "title": "Berserker Aliens: The Deadliest Answer to the Fermi Paradox",
+      "tags": [
+        "science"
+      ],
+      "addedAt": "2026-08-08",
+      "url": "https://thiagotv.vercel.app/v/blQGQCD7MxI.html"
+    },
+    {
+      "videoId": "fwaGuz0-XMo",
+      "title": "Hercules the Invincible [1964]: The Legendary Hero Against the Infernal Dragon | Full HD",
+      "tags": [
+        "films"
+      ],
+      "addedAt": "2026-08-08",
+      "url": "https://thiagotv.vercel.app/v/fwaGuz0-XMo.html"
+    },
+    {
+      "videoId": "lQlIhraqL7o",
+      "title": "I Just Had Sex (feat. Akon)",
+      "tags": [
+        "comedy",
+        "music"
+      ],
+      "addedAt": "2026-08-08",
+      "url": "https://thiagotv.vercel.app/v/lQlIhraqL7o.html"
+    },
+    {
+      "videoId": "7qSCXXpxr9Y",
+      "title": "TEKKEN - The Motion Picture (1997) Full Movie",
+      "tags": [
+        "films",
+        "cartoon"
+      ],
+      "addedAt": "2026-08-08",
+      "url": "https://thiagotv.vercel.app/v/7qSCXXpxr9Y.html"
+    },
+    {
+      "videoId": "etviGf1uWlg",
+      "title": "Deee-Lite - Groove Is In The Heart (Official Video)",
+      "tags": [
+        "music"
+      ],
+      "addedAt": "2026-08-08",
+      "url": "https://thiagotv.vercel.app/v/etviGf1uWlg.html"
+    },
+    {
+      "videoId": "JQ5nUaPEzr0",
+      "title": "Super President | Making Fun Of Old Cartoons",
+      "tags": [
+        "comedy"
+      ],
+      "addedAt": "2026-08-08",
+      "url": "https://thiagotv.vercel.app/v/JQ5nUaPEzr0.html"
+    }
+  ]
+}
