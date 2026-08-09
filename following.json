@@ -10,6 +10,18 @@
       "followedAt": "2026-08-08",
       "lastSeen": "2026-07-31",
       "lastVideoId": "j5pNEsghKCU"
+    },
+    {
+      "kind": "youtube",
+      "name": "Internet Today",
+      "url": "https://www.youtube.com/@InternetTodayTV",
+      "feed": "https://www.youtube.com/feeds/videos.xml?channel_id=UCyZVCV9xhrCyz4hPehvb4Wg",
+      "channel": "comedy",
+      "followedAt": "2026-08-08",
+      "lastSeen": "2026-08-08",
+      "lastVideoId": "0H829R2utW0",
+      "cadence": "daily",
+      "cadenceReason": "posts every ~2 days"
     }
   ]
 }
