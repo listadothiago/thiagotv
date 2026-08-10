@@ -13,25 +13,25 @@
       "id": "cartoon",
       "label": "Cartoon",
       "url": "https://thiagotv.vercel.app/c/cartoon.html",
-      "count": 147
+      "count": 60
     },
     {
       "id": "comedy",
       "label": "Comedy",
       "url": "https://thiagotv.vercel.app/c/comedy.html",
-      "count": 99
+      "count": 97
     },
     {
       "id": "drag",
       "label": "Drag",
       "url": "https://thiagotv.vercel.app/c/drag.html",
-      "count": 102
+      "count": 101
     },
     {
       "id": "films",
       "label": "Films",
       "url": "https://thiagotv.vercel.app/c/films.html",
-      "count": 23
+      "count": 21
     },
     {
       "id": "history",
@@ -43,7 +43,7 @@
       "id": "music",
       "label": "Music",
       "url": "https://thiagotv.vercel.app/c/music.html",
-      "count": 197
+      "count": 196
     },
     {
       "id": "nature",
@@ -84,15 +84,6 @@
         "name": "Internet Today",
         "url": "https://www.youtube.com/@InternetTodayTV"
       }
-    },
-    {
-      "videoId": "42K0CFMq5Ks",
-      "title": "01 Jiz!!!",
-      "tags": [
-        "cartoon"
-      ],
-      "addedAt": "2026-08-08",
-      "url": "https://thiagotv.vercel.app/v/42K0CFMq5Ks.html"
     },
     {
       "videoId": "tzoRnOJzDnw",
@@ -168,6 +159,20 @@
       ],
       "addedAt": "2026-08-08",
       "url": "https://thiagotv.vercel.app/v/JQ5nUaPEzr0.html"
+    },
+    {
+      "videoId": "QuHjXrRBC6s",
+      "title": "Saudi Arabia Now Owns the Gaming Industry!? - News Dump",
+      "tags": [
+        "comedy"
+      ],
+      "addedAt": "2026-08-07",
+      "url": "https://thiagotv.vercel.app/v/QuHjXrRBC6s.html",
+      "source": {
+        "kind": "youtube",
+        "name": "Internet Today",
+        "url": "https://www.youtube.com/@InternetTodayTV"
+      }
     }
   ]
 }
