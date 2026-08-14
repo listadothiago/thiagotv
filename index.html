@@ -1887,10 +1887,12 @@
             }
             frame();
             snowTimer = setInterval(frame, 1000 / SNOW_FPS);
+            startStatic();
         }
 
         function stopSnow() {
             if (snowTimer) { clearInterval(snowTimer); snowTimer = null; }
+            stopStatic();
         }
 
         // ---- Bulletin ------------------------------------------------------------
@@ -2512,6 +2514,57 @@
         function knobClick()    { chipBlip([740, 1175], 0.09, 0.028); }
         // Volume: a single, plainer blip -- one note is enough for a step.
         function volumeClick()  { chipBlip([988], 0.075, 0.022); }
+
+        // The hiss under the snow card. One noise buffer, generated once and
+        // looped, rather than a fresh one per tune -- the randomness is already
+        // there in the samples, so a loop point never repeats anything a viewer
+        // would consciously notice.
+        var staticBuffer = null;
+        var staticNode = null;
+
+        function startStatic() {
+            var ctx = audioContext();
+            if (!ctx) return;
+            try {
+                if (!staticBuffer) {
+                    var frames = ctx.sampleRate * 2;
+                    staticBuffer = ctx.createBuffer(1, frames, ctx.sampleRate);
+                    var data = staticBuffer.getChannelData(0);
+                    for (var i = 0; i < frames; i++) data[i] = Math.random() * 2 - 1;
+                }
+                var src = ctx.createBufferSource();
+                src.buffer = staticBuffer;
+                src.loop = true;
+
+                var filter = ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.value = 3200;
+                filter.Q.value = 0.7;
+
+                var gain = ctx.createGain();
+                gain.gain.setValueAtTime(0, ctx.currentTime);
+                gain.gain.linearRampToValueAtTime(0.05, ctx.currentTime + 0.05);
+
+                src.connect(filter); filter.connect(gain); gain.connect(ctx.destination);
+                src.start();
+                staticNode = { src: src, gain: gain };
+            } catch (e) { staticNode = null; }
+        }
+
+        function stopStatic() {
+            if (!staticNode) return;
+            var ctx = audioContext();
+            var node = staticNode;
+            staticNode = null;
+            if (!ctx) return;
+            try {
+                var now = ctx.currentTime;
+                node.gain.gain.cancelScheduledValues(now);
+                node.gain.gain.setValueAtTime(node.gain.gain.value, now);
+                node.gain.gain.linearRampToValueAtTime(0, now + 0.05);
+                node.src.stop(now + 0.06);
+            } catch (e) {}
+        }
 
         // ---- Power ---------------------------------------------------------------
         // The set is off until the viewer switches it on, every visit. Not

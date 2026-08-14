@@ -61,7 +61,7 @@
       "id": "vignette",
       "label": "Vignette",
       "url": "https://thiagotv.vercel.app/c/vignette.html",
-      "count": 120
+      "count": 121
     }
   ],
   "playlist": "https://thiagotv.vercel.app/playlist.json",
@@ -71,6 +71,15 @@
     "hours": 72.0
   },
   "latest": [
+    {
+      "videoId": "aFdE__2OKc8",
+      "title": "Not so fast",
+      "tags": [
+        "vignette"
+      ],
+      "addedAt": "2026-08-14",
+      "url": "https://thiagotv.vercel.app/v/aFdE__2OKc8.html"
+    },
     {
       "videoId": "BwkBXNOPa_w",
       "title": "📀OPEN LIVING - A Data Center You Can Live in",
@@ -159,15 +168,6 @@
       ],
       "addedAt": "2026-08-08",
       "url": "https://thiagotv.vercel.app/v/7qSCXXpxr9Y.html"
-    },
-    {
-      "videoId": "etviGf1uWlg",
-      "title": "Deee-Lite - Groove Is In The Heart (Official Video)",
-      "tags": [
-        "music"
-      ],
-      "addedAt": "2026-08-08",
-      "url": "https://thiagotv.vercel.app/v/etviGf1uWlg.html"
     }
   ]
 }
