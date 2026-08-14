@@ -61,7 +61,7 @@
       "id": "vignette",
       "label": "Vignette",
       "url": "https://thiagotv.vercel.app/c/vignette.html",
-      "count": 118
+      "count": 120
     }
   ],
   "playlist": "https://thiagotv.vercel.app/playlist.json",
@@ -71,6 +71,24 @@
     "hours": 72.0
   },
   "latest": [
+    {
+      "videoId": "BwkBXNOPa_w",
+      "title": "📀OPEN LIVING - A Data Center You Can Live in",
+      "tags": [
+        "vignette"
+      ],
+      "addedAt": "2026-08-14",
+      "url": "https://thiagotv.vercel.app/v/BwkBXNOPa_w.html"
+    },
+    {
+      "videoId": "0djmoPvA8QQ",
+      "title": "JAWS, But it's Super Mario",
+      "tags": [
+        "vignette"
+      ],
+      "addedAt": "2026-08-14",
+      "url": "https://thiagotv.vercel.app/v/0djmoPvA8QQ.html"
+    },
     {
       "videoId": "0H829R2utW0",
       "title": "America is SICK - Weekly Weird News",
@@ -150,29 +168,6 @@
       ],
       "addedAt": "2026-08-08",
       "url": "https://thiagotv.vercel.app/v/etviGf1uWlg.html"
-    },
-    {
-      "videoId": "JQ5nUaPEzr0",
-      "title": "Super President | Making Fun Of Old Cartoons",
-      "tags": [
-        "comedy"
-      ],
-      "addedAt": "2026-08-08",
-      "url": "https://thiagotv.vercel.app/v/JQ5nUaPEzr0.html"
-    },
-    {
-      "videoId": "QuHjXrRBC6s",
-      "title": "Saudi Arabia Now Owns the Gaming Industry!? - News Dump",
-      "tags": [
-        "comedy"
-      ],
-      "addedAt": "2026-08-07",
-      "url": "https://thiagotv.vercel.app/v/QuHjXrRBC6s.html",
-      "source": {
-        "kind": "youtube",
-        "name": "Internet Today",
-        "url": "https://www.youtube.com/@InternetTodayTV"
-      }
     }
   ]
 }
