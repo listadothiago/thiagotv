@@ -2882,7 +2882,16 @@
 
         document.addEventListener('keydown', function (e) {
             if (renamingChannel) return;   // the dial is not the keyboard's while you type
-            if (e.key === 'ArrowRight') tuneForward();
+            if (e.key === 'Enter') {
+                // Suppress the browser's own Enter-activates-the-focused-control
+                // behaviour -- without this, pressing Enter while the power
+                // button itself is focused would toggle power twice (once here,
+                // once from the native click Enter triggers on a button).
+                e.preventDefault();
+                thunkSound(!powered);
+                if (powered) powerOff(); else powerOn();
+            }
+            else if (e.key === 'ArrowRight') tuneForward();
             else if (e.key === 'ArrowLeft') tuneBack();
             else if (e.key === 'ArrowUp') stepVolume(1);
             else if (e.key === 'ArrowDown') stepVolume(-1);
