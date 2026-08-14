@@ -2453,8 +2453,9 @@
         //
         // These are room noises, not programme audio, so they are deliberately
         // not tied to the volume knob: muting a television silences the
-        // broadcast, not the clunk of its switches. They are quiet enough that
-        // the distinction never becomes annoying.
+        // broadcast, not the clunk of its switches. Pitched as chiptune blips --
+        // square waves, quantised steps -- rather than a plastic detent, so the
+        // set answers every knob turn and power press like an old console.
         var audio = null;
 
         function audioContext() {
@@ -2465,36 +2466,31 @@
             return audio;
         }
 
-        // A detent: a very short burst of filtered noise, which is what a plastic
-        // knob passing a notch actually sounds like.
-        function clickSound(pitch, level, length) {
+        // One or more square-wave notes fired back to back -- a single blip for
+        // a plain click, a short arpeggio for anything that deserves more than
+        // one note.
+        function chipBlip(freqs, level, stepLength) {
             var ctx = audioContext();
             if (!ctx) return;
             try {
-                var frames = Math.floor(ctx.sampleRate * length);
-                var buffer = ctx.createBuffer(1, frames, ctx.sampleRate);
-                var data = buffer.getChannelData(0);
-                for (var i = 0; i < frames; i++) {
-                    // Decaying noise: loud at the strike, gone almost at once.
-                    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / frames, 3);
-                }
-                var src = ctx.createBufferSource();
-                src.buffer = buffer;
-
-                var band = ctx.createBiquadFilter();
-                band.type = 'bandpass';
-                band.frequency.value = pitch;
-                band.Q.value = 1.1;
-
-                var gain = ctx.createGain();
-                gain.gain.value = level;
-
-                src.connect(band); band.connect(gain); gain.connect(ctx.destination);
-                src.start();
+                var t = ctx.currentTime;
+                freqs.forEach(function (freq, i) {
+                    var osc = ctx.createOscillator();
+                    var gain = ctx.createGain();
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(freq, t + i * stepLength);
+                    gain.gain.setValueAtTime(level, t + i * stepLength);
+                    gain.gain.exponentialRampToValueAtTime(0.0001, t + i * stepLength + stepLength * 0.9);
+                    osc.connect(gain); gain.connect(ctx.destination);
+                    osc.start(t + i * stepLength);
+                    osc.stop(t + i * stepLength + stepLength);
+                });
             } catch (e) { /* sound is never worth an exception */ }
         }
 
-        // The power switch is heavier and mechanical, so it gets a body to it.
+        // The power switch is heavier and mechanical, so it keeps a low square-wave
+        // body underneath -- topped with a rising boot chime going on, a falling
+        // one going off, the way an old console announces itself.
         function thunkSound(up) {
             var ctx = audioContext();
             if (!ctx) return;
@@ -2504,16 +2500,18 @@
                 osc.type = 'square';
                 osc.frequency.setValueAtTime(up ? 150 : 110, ctx.currentTime);
                 osc.frequency.exponentialRampToValueAtTime(up ? 70 : 45, ctx.currentTime + 0.09);
-                gain.gain.setValueAtTime(0.09, ctx.currentTime);
+                gain.gain.setValueAtTime(0.12, ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.13);
                 osc.connect(gain); gain.connect(ctx.destination);
                 osc.start(); osc.stop(ctx.currentTime + 0.14);
             } catch (e) {}
-            clickSound(1800, 0.05, 0.02);
+            chipBlip(up ? [523, 784, 1047] : [784, 523], 0.08, 0.045);
         }
 
-        function knobClick()    { clickSound(2400, 0.055, 0.018); }
-        function volumeClick()  { clickSound(3100, 0.04,  0.014); }
+        // Channel change: a quick two-note upward blip, the dial's own coin-sound.
+        function knobClick()    { chipBlip([740, 1175], 0.09, 0.028); }
+        // Volume: a single, plainer blip -- one note is enough for a step.
+        function volumeClick()  { chipBlip([988], 0.075, 0.022); }
 
         // ---- Power ---------------------------------------------------------------
         // The set is off until the viewer switches it on, every visit. Not
