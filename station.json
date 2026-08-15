@@ -19,7 +19,7 @@
       "id": "comedy",
       "label": "Comedy",
       "url": "https://thiagotv.vercel.app/c/comedy.html",
-      "count": 97
+      "count": 98
     },
     {
       "id": "drag",
@@ -71,6 +71,15 @@
     "hours": 72.0
   },
   "latest": [
+    {
+      "videoId": "1yT2vcPKozQ",
+      "title": "Honest Trailers | Twister",
+      "tags": [
+        "comedy"
+      ],
+      "addedAt": "2026-08-15",
+      "url": "https://thiagotv.vercel.app/v/1yT2vcPKozQ.html"
+    },
     {
       "videoId": "aFdE__2OKc8",
       "title": "Not so fast",
@@ -158,16 +167,6 @@
       ],
       "addedAt": "2026-08-08",
       "url": "https://thiagotv.vercel.app/v/lQlIhraqL7o.html"
-    },
-    {
-      "videoId": "7qSCXXpxr9Y",
-      "title": "TEKKEN - The Motion Picture (1997) Full Movie",
-      "tags": [
-        "films",
-        "cartoon"
-      ],
-      "addedAt": "2026-08-08",
-      "url": "https://thiagotv.vercel.app/v/7qSCXXpxr9Y.html"
     }
   ]
 }
