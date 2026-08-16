@@ -43,7 +43,7 @@
       "id": "music",
       "label": "Music",
       "url": "https://thiagotv.vercel.app/c/music.html",
-      "count": 196
+      "count": 197
     },
     {
       "id": "nature",
@@ -71,6 +71,15 @@
     "hours": 72.0
   },
   "latest": [
+    {
+      "videoId": "5Qcaq5ynrgw",
+      "title": "Pan Tèrra - Quit My Job (Official Video)",
+      "tags": [
+        "music"
+      ],
+      "addedAt": "2026-08-15",
+      "url": "https://thiagotv.vercel.app/v/5Qcaq5ynrgw.html"
+    },
     {
       "videoId": "1yT2vcPKozQ",
       "title": "Honest Trailers | Twister",
@@ -157,16 +166,6 @@
       ],
       "addedAt": "2026-08-08",
       "url": "https://thiagotv.vercel.app/v/fwaGuz0-XMo.html"
-    },
-    {
-      "videoId": "lQlIhraqL7o",
-      "title": "I Just Had Sex (feat. Akon)",
-      "tags": [
-        "comedy",
-        "music"
-      ],
-      "addedAt": "2026-08-08",
-      "url": "https://thiagotv.vercel.app/v/lQlIhraqL7o.html"
     }
   ]
 }
