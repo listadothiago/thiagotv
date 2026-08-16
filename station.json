@@ -61,7 +61,7 @@
       "id": "vignette",
       "label": "Vignette",
       "url": "https://thiagotv.vercel.app/c/vignette.html",
-      "count": 121
+      "count": 122
     }
   ],
   "playlist": "https://thiagotv.vercel.app/playlist.json",
@@ -71,6 +71,15 @@
     "hours": 72.0
   },
   "latest": [
+    {
+      "videoId": "NF08jdNyIsg",
+      "title": "Birddancing🐦⬛birddancingfrest",
+      "tags": [
+        "vignette"
+      ],
+      "addedAt": "2026-08-15",
+      "url": "https://thiagotv.vercel.app/v/NF08jdNyIsg.html"
+    },
     {
       "videoId": "5Qcaq5ynrgw",
       "title": "Pan Tèrra - Quit My Job (Official Video)",
@@ -157,15 +166,6 @@
       ],
       "addedAt": "2026-08-08",
       "url": "https://thiagotv.vercel.app/v/blQGQCD7MxI.html"
-    },
-    {
-      "videoId": "fwaGuz0-XMo",
-      "title": "Hercules the Invincible [1964]: The Legendary Hero Against the Infernal Dragon | Full HD",
-      "tags": [
-        "films"
-      ],
-      "addedAt": "2026-08-08",
-      "url": "https://thiagotv.vercel.app/v/fwaGuz0-XMo.html"
     }
   ]
 }
