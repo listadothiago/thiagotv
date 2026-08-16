@@ -19,7 +19,7 @@
       "id": "comedy",
       "label": "Comedy",
       "url": "https://thiagotv.vercel.app/c/comedy.html",
-      "count": 98
+      "count": 99
     },
     {
       "id": "drag",
@@ -37,7 +37,7 @@
       "id": "history",
       "label": "History",
       "url": "https://thiagotv.vercel.app/c/history.html",
-      "count": 27
+      "count": 28
     },
     {
       "id": "music",
@@ -71,6 +71,24 @@
     "hours": 72.0
   },
   "latest": [
+    {
+      "videoId": "Qhjfxx3_n34",
+      "title": "Why Cleopatra Still Looks Like a Trillion Bucks",
+      "tags": [
+        "history"
+      ],
+      "addedAt": "2026-08-16",
+      "url": "https://thiagotv.vercel.app/v/Qhjfxx3_n34.html"
+    },
+    {
+      "videoId": "mcYl70vq_Ns",
+      "title": "What it's like to be an AI artist",
+      "tags": [
+        "comedy"
+      ],
+      "addedAt": "2026-08-16",
+      "url": "https://thiagotv.vercel.app/v/mcYl70vq_Ns.html"
+    },
     {
       "videoId": "bp4_7T9J6Fg",
       "title": "birds for some reason",
@@ -147,25 +165,6 @@
         "name": "Internet Today",
         "url": "https://www.youtube.com/@InternetTodayTV"
       }
-    },
-    {
-      "videoId": "tzoRnOJzDnw",
-      "title": "Boy Band by Joe Cappa | Off The Air | adult swim",
-      "tags": [
-        "cartoon",
-        "vignette"
-      ],
-      "addedAt": "2026-08-08",
-      "url": "https://thiagotv.vercel.app/v/tzoRnOJzDnw.html"
-    },
-    {
-      "videoId": "BBb2gC0lByk",
-      "title": "Can Humans REALLY Leave Earth? [Interstellar Spaceship]",
-      "tags": [
-        "science"
-      ],
-      "addedAt": "2026-08-08",
-      "url": "https://thiagotv.vercel.app/v/BBb2gC0lByk.html"
     }
   ]
 }
