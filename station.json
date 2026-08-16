@@ -61,7 +61,7 @@
       "id": "vignette",
       "label": "Vignette",
       "url": "https://thiagotv.vercel.app/c/vignette.html",
-      "count": 122
+      "count": 123
     }
   ],
   "playlist": "https://thiagotv.vercel.app/playlist.json",
@@ -71,6 +71,15 @@
     "hours": 72.0
   },
   "latest": [
+    {
+      "videoId": "bp4_7T9J6Fg",
+      "title": "birds for some reason",
+      "tags": [
+        "vignette"
+      ],
+      "addedAt": "2026-08-16",
+      "url": "https://thiagotv.vercel.app/v/bp4_7T9J6Fg.html"
+    },
     {
       "videoId": "NF08jdNyIsg",
       "title": "Birddancing🐦⬛birddancingfrest",
@@ -157,15 +166,6 @@
       ],
       "addedAt": "2026-08-08",
       "url": "https://thiagotv.vercel.app/v/BBb2gC0lByk.html"
-    },
-    {
-      "videoId": "blQGQCD7MxI",
-      "title": "Berserker Aliens: The Deadliest Answer to the Fermi Paradox",
-      "tags": [
-        "science"
-      ],
-      "addedAt": "2026-08-08",
-      "url": "https://thiagotv.vercel.app/v/blQGQCD7MxI.html"
     }
   ]
 }
