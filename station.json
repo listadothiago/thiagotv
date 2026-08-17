@@ -19,7 +19,7 @@
       "id": "comedy",
       "label": "Comedy",
       "url": "https://thiagotv.vercel.app/c/comedy.html",
-      "count": 99
+      "count": 100
     },
     {
       "id": "drag",
@@ -71,6 +71,15 @@
     "hours": 72.0
   },
   "latest": [
+    {
+      "videoId": "BmMKr5YO0gE",
+      "title": "LAW ROACH IS AN ICONIC GUEST | ZIWE INTERVIEW",
+      "tags": [
+        "comedy"
+      ],
+      "addedAt": "2026-08-17",
+      "url": "https://thiagotv.vercel.app/v/BmMKr5YO0gE.html"
+    },
     {
       "videoId": "ooqSS5SlL9o",
       "title": "Hot Tub (Extended Scene) | Haha, You Clowns | adult swim",
@@ -151,15 +160,6 @@
       ],
       "addedAt": "2026-08-14",
       "url": "https://thiagotv.vercel.app/v/aFdE__2OKc8.html"
-    },
-    {
-      "videoId": "BwkBXNOPa_w",
-      "title": "📀OPEN LIVING - A Data Center You Can Live in",
-      "tags": [
-        "vignette"
-      ],
-      "addedAt": "2026-08-14",
-      "url": "https://thiagotv.vercel.app/v/BwkBXNOPa_w.html"
     }
   ]
 }
