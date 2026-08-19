@@ -43,7 +43,7 @@
       "id": "music",
       "label": "Music",
       "url": "https://thiagotv.vercel.app/c/music.html",
-      "count": 197
+      "count": 198
     },
     {
       "id": "nature",
@@ -71,6 +71,15 @@
     "hours": 72.0
   },
   "latest": [
+    {
+      "videoId": "HUgwM1Ky228",
+      "title": "Indigo Girls - Closer To Fine",
+      "tags": [
+        "music"
+      ],
+      "addedAt": "2026-08-19",
+      "url": "https://thiagotv.vercel.app/v/HUgwM1Ky228.html"
+    },
     {
       "videoId": "BmMKr5YO0gE",
       "title": "LAW ROACH IS AN ICONIC GUEST | ZIWE INTERVIEW",
@@ -151,15 +160,6 @@
       ],
       "addedAt": "2026-08-15",
       "url": "https://thiagotv.vercel.app/v/1yT2vcPKozQ.html"
-    },
-    {
-      "videoId": "aFdE__2OKc8",
-      "title": "Not so fast",
-      "tags": [
-        "vignette"
-      ],
-      "addedAt": "2026-08-14",
-      "url": "https://thiagotv.vercel.app/v/aFdE__2OKc8.html"
     }
   ]
 }
