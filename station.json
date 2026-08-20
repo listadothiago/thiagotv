@@ -31,7 +31,7 @@
       "id": "films",
       "label": "Films",
       "url": "https://thiagotv.vercel.app/c/films.html",
-      "count": 21
+      "count": 22
     },
     {
       "id": "history",
@@ -71,6 +71,15 @@
     "hours": 72.0
   },
   "latest": [
+    {
+      "videoId": "z_rr2GvP7Dw",
+      "title": "The Curse of the Cannibal Confederates (1982)",
+      "tags": [
+        "films"
+      ],
+      "addedAt": "2026-08-19",
+      "url": "https://thiagotv.vercel.app/v/z_rr2GvP7Dw.html"
+    },
     {
       "videoId": "HUgwM1Ky228",
       "title": "Indigo Girls - Closer To Fine",
@@ -151,15 +160,6 @@
       ],
       "addedAt": "2026-08-15",
       "url": "https://thiagotv.vercel.app/v/5Qcaq5ynrgw.html"
-    },
-    {
-      "videoId": "1yT2vcPKozQ",
-      "title": "Honest Trailers | Twister",
-      "tags": [
-        "comedy"
-      ],
-      "addedAt": "2026-08-15",
-      "url": "https://thiagotv.vercel.app/v/1yT2vcPKozQ.html"
     }
   ]
 }
