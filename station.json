@@ -37,7 +37,7 @@
       "id": "history",
       "label": "History",
       "url": "https://thiagotv.vercel.app/c/history.html",
-      "count": 28
+      "count": 29
     },
     {
       "id": "music",
@@ -71,6 +71,15 @@
     "hours": 72.0
   },
   "latest": [
+    {
+      "videoId": "FnPo0eTIRJQ",
+      "title": "Why This Cyberpunk City is Dying",
+      "tags": [
+        "history"
+      ],
+      "addedAt": "2026-08-21",
+      "url": "https://thiagotv.vercel.app/v/FnPo0eTIRJQ.html"
+    },
     {
       "videoId": "FEdm_U8-Sdg",
       "title": "[ARCHIVES: MADONNA & COURTNEY LOVE 1995]",
@@ -151,15 +160,6 @@
       ],
       "addedAt": "2026-08-16",
       "url": "https://thiagotv.vercel.app/v/mcYl70vq_Ns.html"
-    },
-    {
-      "videoId": "bp4_7T9J6Fg",
-      "title": "birds for some reason",
-      "tags": [
-        "vignette"
-      ],
-      "addedAt": "2026-08-16",
-      "url": "https://thiagotv.vercel.app/v/bp4_7T9J6Fg.html"
     }
   ]
 }
