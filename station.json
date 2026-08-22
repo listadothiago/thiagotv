@@ -55,13 +55,13 @@
       "id": "science",
       "label": "Science",
       "url": "https://thiagotv.vercel.app/c/science.html",
-      "count": 2
+      "count": 3
     },
     {
       "id": "vignette",
       "label": "Vignette",
       "url": "https://thiagotv.vercel.app/c/vignette.html",
-      "count": 126
+      "count": 127
     }
   ],
   "playlist": "https://thiagotv.vercel.app/playlist.json",
@@ -71,6 +71,24 @@
     "hours": 72.0
   },
   "latest": [
+    {
+      "videoId": "vj4KBzc0o2U",
+      "title": "living with a friend who transcended humanity",
+      "tags": [
+        "vignette"
+      ],
+      "addedAt": "2026-08-22",
+      "url": "https://thiagotv.vercel.app/v/vj4KBzc0o2U.html"
+    },
+    {
+      "videoId": "aa0RX5EITc4",
+      "title": "Refraction, Attraction & Beakmania | Beakman's World | FULL EPISODE | S1E9 | Indoor Recess",
+      "tags": [
+        "science"
+      ],
+      "addedAt": "2026-08-22",
+      "url": "https://thiagotv.vercel.app/v/aa0RX5EITc4.html"
+    },
     {
       "videoId": "FnPo0eTIRJQ",
       "title": "Why This Cyberpunk City is Dying",
@@ -142,24 +160,6 @@
       ],
       "addedAt": "2026-08-16",
       "url": "https://thiagotv.vercel.app/v/wtN0dr-GZs4.html"
-    },
-    {
-      "videoId": "Qhjfxx3_n34",
-      "title": "Why Cleopatra Still Looks Like a Trillion Bucks",
-      "tags": [
-        "history"
-      ],
-      "addedAt": "2026-08-16",
-      "url": "https://thiagotv.vercel.app/v/Qhjfxx3_n34.html"
-    },
-    {
-      "videoId": "mcYl70vq_Ns",
-      "title": "What it's like to be an AI artist",
-      "tags": [
-        "comedy"
-      ],
-      "addedAt": "2026-08-16",
-      "url": "https://thiagotv.vercel.app/v/mcYl70vq_Ns.html"
     }
   ]
 }
