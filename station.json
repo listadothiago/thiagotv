@@ -7,7 +7,7 @@
       "id": "ads",
       "label": "Ads",
       "url": "https://thiagotv.vercel.app/c/ads.html",
-      "count": 29
+      "count": 30
     },
     {
       "id": "cartoon",
@@ -71,6 +71,15 @@
     "hours": 72.0
   },
   "latest": [
+    {
+      "videoId": "QIgZHZpiq1U",
+      "title": "Creepy Anti-Cable (Pay TV) PSA from the 70's",
+      "tags": [
+        "ads"
+      ],
+      "addedAt": "2026-08-22",
+      "url": "https://thiagotv.vercel.app/v/QIgZHZpiq1U.html"
+    },
     {
       "videoId": "vj4KBzc0o2U",
       "title": "living with a friend who transcended humanity",
@@ -151,15 +160,6 @@
       ],
       "addedAt": "2026-08-16",
       "url": "https://thiagotv.vercel.app/v/ooqSS5SlL9o.html"
-    },
-    {
-      "videoId": "wtN0dr-GZs4",
-      "title": "HAHA YOU CLOWNS 06: VR | adult swim smalls",
-      "tags": [
-        "vignette"
-      ],
-      "addedAt": "2026-08-16",
-      "url": "https://thiagotv.vercel.app/v/wtN0dr-GZs4.html"
     }
   ]
 }
